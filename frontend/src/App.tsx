@@ -1,21 +1,42 @@
 import { useState } from 'react'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import PlayerBar from './components/PlayerBar'
 import UploadForm from './components/UploadForm'
+import Login from './pages/Login'
+import Signup from './pages/Signup'
 
-function App() {
+function Home() {
   const [currentTrack, setCurrentTrack] = useState<{
     src?: string;
     title?: string;
     artist?: string;
   }>({});
 
+  const user = localStorage.getItem('user');
+  
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    window.location.href = '/login';
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 pb-24">
       <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto py-6 px-4">
+        <div className="max-w-7xl mx-auto py-6 px-4 flex justify-between items-center">
           <h1 className="text-3xl font-bold text-gray-900">
             🎵 Sangtamizh Music
           </h1>
+          <button
+            onClick={handleLogout}
+            className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+          >
+            Logout
+          </button>
         </div>
       </header>
 
@@ -42,7 +63,20 @@ function App() {
 
       <PlayerBar {...currentTrack} />
     </div>
+  );
+}
+
+function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
+        <Route path="/" element={<Home />} />
+      </Routes>
+    </BrowserRouter>
   )
 }
 
 export default App
+
