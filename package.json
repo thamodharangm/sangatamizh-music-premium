@@ -1,0 +1,16 @@
+{
+  "name": "sangtamizh-music-monorepo",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev --workspace=backend\" \"npm run dev --workspace=frontend\"",
+    "build": "concurrently \"npm run build --workspace=backend\" \"npm run build --workspace=frontend\"",
+    "test": "concurrently \"npm run test --workspace=backend\" \"npm run test --workspace=frontend\""
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
