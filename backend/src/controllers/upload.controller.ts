@@ -7,7 +7,7 @@ import {
   ALLOWED_AUDIO_TYPES,
   ALLOWED_IMAGE_TYPES,
 } from '../services/s3.service';
-import { authenticateToken } from '../middleware/auth';
+import { authenticate, AuthRequest } from '../middleware/auth';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -17,7 +17,7 @@ const prisma = new PrismaClient();
  * Generate presigned URL for file upload
  * Query params: filename, contentType, fileType (audio|image), contentLength
  */
-router.get('/presign', authenticateToken, async (req: Request, res: Response) => {
+router.get('/presign', authenticate, async (req: Request, res: Response) => {
   try {
     const { filename, contentType, fileType = 'audio', contentLength } = req.query;
 
@@ -61,12 +61,12 @@ router.get('/presign', authenticateToken, async (req: Request, res: Response) =>
 /**
  * POST /api/upload/complete
  * Mark upload as complete and create song record
- * Body: { key, title, artist, album, duration, genre }
+ * Body: { key, title, artist, album, durationSeconds, genre }
  */
-router.post('/complete', authenticateToken, async (req: Request, res: Response) => {
+router.post('/complete', authenticate, async (req: Request, res: Response) => {
   try {
-    const { key, title, artist, album, duration, genre } = req.body;
-    const userId = (req as any).user.userId;
+    const { key, title, artist, album, durationSeconds, genre } = req.body;
+    const userId = (req as AuthRequest).user?.id;
 
     // Validate required fields
     if (!key || !title) {
@@ -81,11 +81,13 @@ router.post('/complete', authenticateToken, async (req: Request, res: Response) 
         title,
         artist: artist || 'Unknown Artist',
         album: album || null,
-        duration: duration ? parseInt(duration) : null,
+        durationSeconds: durationSeconds ? parseInt(durationSeconds) : null,
         genre: genre || null,
-        storageKey: key,
+        storageKeys: {
+          original: key,
+        },
         status: 'ready',
-        uploadedById: userId,
+        uploaderId: userId,
       },
     });
 
@@ -95,7 +97,7 @@ router.post('/complete', authenticateToken, async (req: Request, res: Response) 
         id: song.id,
         title: song.title,
         artist: song.artist,
-        storageKey: song.storageKey,
+        storageKeys: song.storageKeys,
       },
     });
   } catch (error: any) {
@@ -123,12 +125,13 @@ router.get('/stream/:songId', async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Song not found' });
     }
 
-    if (!song.storageKey) {
+    const storageKeys = song.storageKeys as any;
+    if (!storageKeys || !storageKeys.original) {
       return res.status(404).json({ error: 'Song file not available' });
     }
 
     // Generate presigned download URL
-    const streamUrl = await generatePresignedDownloadUrl(song.storageKey, 3600); // 1 hour
+    const streamUrl = await generatePresignedDownloadUrl(storageKeys.original, 3600); // 1 hour
 
     res.json({
       streamUrl,
@@ -136,7 +139,7 @@ router.get('/stream/:songId', async (req: Request, res: Response) => {
         id: song.id,
         title: song.title,
         artist: song.artist,
-        duration: song.duration,
+        durationSeconds: song.durationSeconds,
       },
     });
   } catch (error: any) {
