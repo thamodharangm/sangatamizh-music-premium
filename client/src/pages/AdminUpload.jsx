@@ -72,8 +72,42 @@ const AdminUpload = () => {
 
   const handleUpload = async (e) => {
     e.preventDefault();
+    setLoading(true);
+    setMessage('');
+    setError('');
+
+    try {
+      if (uploadTab === 'youtube') {
+         // Backend Process (YouTube)
+         await api.post('/upload-from-yt', {
+           url: youtubeUrl,
+           category: metadata.category,
+           customMetadata: metadata
+         });
+         setMessage('YouTube Import Successful!');
+         setYoutubeUrl('');
+      } else {
+         // Backend Process (File Upload)
+        if (!file) throw new Error("Please select an audio file.");
+
+        const formData = new FormData();
+        formData.append('audio', file);
+        if (cover) {
+          formData.append('cover', cover);
+        }
+        formData.append('title', metadata.title || file.name.replace(/\.[^/.]+$/, ""));
+        formData.append('artist', metadata.artist || 'Unknown Artist');
+        formData.append('album', metadata.album || 'Single');
+        formData.append('category', metadata.category || 'General');
+
+        await api.post('/upload-file', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        
+        setMessage('File Upload Successful!');
+        setFile(null);
         setCover(null);
-        document.getElementById('audio-input').value = "";
+        if(document.getElementById('audio-input')) document.getElementById('audio-input').value = "";
         if(document.getElementById('cover-input')) document.getElementById('cover-input').value = "";
       }
       
