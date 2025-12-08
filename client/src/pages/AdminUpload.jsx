@@ -13,7 +13,7 @@ const AdminUpload = () => {
   // Form State
   const [file, setFile] = useState(null);
   const [cover, setCover] = useState(null);
-  const [metadata, setMetadata] = useState({ title: '', artist: '', album: '', category: '', coverUrl: '' });
+  const [metadata, setMetadata] = useState({ title: '', artist: '', album: '', category: 'General', coverUrl: '' });
   
   const [loading, setLoading] = useState(false);
   const [dataLoading, setDataLoading] = useState(true);
@@ -111,7 +111,7 @@ const AdminUpload = () => {
         if(document.getElementById('cover-input')) document.getElementById('cover-input').value = "";
       }
       
-      setMetadata({ title: '', artist: '', album: '', category: '', coverUrl: '' });
+      setMetadata({ title: '', artist: '', album: '', category: 'General', coverUrl: '' });
       fetchSongs(); // Refresh stats
 
     } catch (err) {
@@ -171,7 +171,7 @@ const AdminUpload = () => {
       )}
 
       {/* Main Tabs */}
-      <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem' }}>
+      <div className="admin-tabs" style={{ display: 'flex', gap: '1rem', marginBottom: '2rem' }}>
         {['dashboard', 'upload', 'manage'].map((tab) => (
           <button 
             key={tab}
@@ -271,28 +271,13 @@ const AdminUpload = () => {
                  <input className="input-flat" type="text" name="title" placeholder="Song Title" value={metadata.title} onChange={handleMetadataChange} />
                  <input className="input-flat" type="text" name="artist" placeholder="Artist Name" value={metadata.artist} onChange={handleMetadataChange} />
                  <input className="input-flat" type="text" name="album" placeholder="Album Name" value={metadata.album} onChange={handleMetadataChange} />
-                 <select className="input-flat" name="category" value={metadata.category} onChange={handleMetadataChange} style={{ cursor: 'pointer' }}>
-                   <option value="">Select Category</option>
-                   <option value="Tamil">Tamil</option>
-                   <option value="Malayalam">Malayalam</option>
-                   <option value="English">English</option>
-                   <option value="Telugu">Telugu</option>
-                   <option value="Hindi">Hindi</option>
-                 </select>
+                 {/* Category hidden */}
                </div>
             )}
 
             {uploadTab === 'youtube' && (
                <div style={{ marginBottom: '1.5rem' }}>
-                  <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-muted)' }}>Category</label>
-                  <select className="input-flat" name="category" value={metadata.category} onChange={handleMetadataChange} style={{ cursor: 'pointer' }}>
-                   <option value="">Select Category</option>
-                   <option value="Tamil">Tamil</option>
-                   <option value="Malayalam">Malayalam</option>
-                   <option value="English">English</option>
-                   <option value="Telugu">Telugu</option>
-                   <option value="Hindi">Hindi</option>
-                 </select>
+                   {/* Category hidden */}
                </div>
             )}
 
@@ -327,12 +312,11 @@ const AdminUpload = () => {
                {error && <div style={{ background: 'rgba(239, 68, 68, 0.2)', border: '1px solid rgba(239, 68, 68, 0.5)', color: '#fca5a5', padding: '0.5rem', borderRadius: '8px', marginBottom: '0.5rem' }}>{error}</div>}
              </div>
            )}
-           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+           <table className="admin-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
              <thead style={{ background: 'rgba(0,0,0,0.2)', color: 'var(--text-muted)' }}>
                <tr>
                  <th style={{ padding: '1rem' }}>Track</th>
                  <th style={{ padding: '1rem' }}>Artist</th>
-                 <th style={{ padding: '1rem' }}>Category</th>
                  <th style={{ padding: '1rem' }}>Date</th>
                  <th style={{ padding: '1rem', textAlign: 'right' }}>Actions</th>
                </tr>
@@ -340,11 +324,10 @@ const AdminUpload = () => {
              <tbody>
                {songs.map((song, i) => (
                  <tr key={song.id || i} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                   <td style={{ padding: '1rem', color: 'white' }}>{song.title}</td>
-                   <td style={{ padding: '1rem', color: 'var(--text-muted)' }}>{song.artist}</td>
-                   <td style={{ padding: '1rem', color: 'var(--text-muted)' }}>{song.category}</td>
-                   <td style={{ padding: '1rem', color: 'var(--text-muted)' }}>{new Date(song.created_at).toLocaleDateString()}</td>
-                   <td style={{ padding: '1rem', textAlign: 'right' }}>
+                   <td data-label="Track" style={{ padding: '1rem', color: 'white' }}>{song.title}</td>
+                   <td data-label="Artist" style={{ padding: '1rem', color: 'var(--text-muted)' }}>{song.artist}</td>
+                   <td data-label="Date" style={{ padding: '1rem', color: 'var(--text-muted)' }}>{new Date(song.created_at).toLocaleDateString()}</td>
+                   <td data-label="Actions" style={{ padding: '1rem', textAlign: 'right' }}>
                      {deleteConfirm === song.id ? (
                         <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
                            <button 

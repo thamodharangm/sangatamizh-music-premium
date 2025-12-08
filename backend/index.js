@@ -169,6 +169,7 @@ app.post('/api/upload-from-yt', async (req, res) => {
     const { data: dbData, error: dbError } = await supabase
       .from('songs')
       .insert({
+        id: require('crypto').randomUUID(), // FIX: Generate ID manually
         title: customMetadata?.title || info.title,
         artist: customMetadata?.artist || info.uploader,
         category: category || 'General',
@@ -218,6 +219,7 @@ app.post('/api/upload-file', upload.fields([{ name: 'audio', maxCount: 1 }, { na
     }
 
     const { data: dbData, error: dbError } = await supabase.from('songs').insert({
+        id: require('crypto').randomUUID(), // FIX: Generate ID manually
         title: title || 'Unknown Title',
         artist: artist || 'Unknown Artist',
         category: category || 'General',

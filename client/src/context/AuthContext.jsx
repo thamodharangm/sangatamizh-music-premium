@@ -7,8 +7,8 @@ import {
   signInWithPopup,
   sendPasswordResetEmail
 } from 'firebase/auth';
-import { ref, get, child } from 'firebase/database';
-import { auth, googleProvider, db } from '../firebase';
+import { doc, getDoc } from 'firebase/firestore';
+import { auth, googleProvider, firestore } from '../firebase';
 
 const AuthContext = createContext();
 
@@ -41,21 +41,35 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
-        // Fetch user role and other data from Realtime Database
+        // Fetch from Firestore ('user' collection) - Debugging Enabled
         try {
-          const dbRef = ref(db);
-          const snapshot = await get(child(dbRef, `users/${currentUser.uid}`));
-          if (snapshot.exists()) {
-            const userData = snapshot.val();
-            // Merge auth user and db user data
-            setUser({ ...currentUser, ...userData });
+          console.log("Auth: Fetching profile from Firestore 'user' collection...");
+          const userDocRef = doc(firestore, "user", currentUser.uid);
+          const userDocSnap = await getDoc(userDocRef);
+          
+          let userData = {};
+          if (userDocSnap.exists()) {
+             userData = userDocSnap.data();
+             console.log("Auth: Firestore Data Found:", userData);
           } else {
-             // If no data in DB, just use auth user (and maybe role: 'user')
-             setUser({ ...currentUser, role: 'user' });
+             console.log("Auth: No Firestore Data Found (New User?)");
           }
+
+          // Merge auth user and db user data
+          let finalUser = { ...currentUser, role: 'user', ...userData };
+
+          // ⚡ FORCE ADMIN for Site Owner (Apply AFTER DB fetch) ⚡
+          if (currentUser.uid === 'ydj6cFzmgaSemt5XnKA74iDWQwR2') {
+            console.log("Auth: Applying Force Admin Override");
+            finalUser.role = 'admin';
+          }
+
+          setUser(finalUser);
         } catch (error) {
-          console.error("Error fetching user data", error);
-          setUser(currentUser);
+          console.error("Auth: Error fetching user data", error);
+          // Fallback if DB fails completely
+          const fallbackUser = { ...currentUser, role: currentUser.uid === 'ydj6cFzmgaSemt5XnKA74iDWQwR2' ? 'admin' : 'user' };
+          setUser(fallbackUser);
         }
       } else {
         setUser(null);

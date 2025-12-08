@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../config/api';
 import SongCard from '../components/SongCard';
 import { useMusic } from '../context/MusicContext';
@@ -7,6 +8,13 @@ function Home() {
   const [songs, setSongs] = useState([]);
   const [loading, setLoading] = useState(true);
   const { playSong } = useMusic();
+
+  const navigate = useNavigate();
+
+  const scrollToTrending = () => {
+    const element = document.getElementById('trending');
+    if (element) element.scrollIntoView({ behavior: 'smooth' });
+  };
 
   useEffect(() => {
     const fetchSongs = async () => {
@@ -49,8 +57,8 @@ function Home() {
               Your daily streak of soulful music starts here.
             </p>
             <div style={{ display: 'flex', gap: '1rem' }}>
-              <button className="btn-3d btn-primary">Start Listening</button>
-              <button className="btn-3d btn-secondary">My Library</button>
+              <button onClick={scrollToTrending} className="btn-3d btn-primary">Start Listening</button>
+              <button onClick={() => navigate('/library')} className="btn-3d btn-secondary">My Library</button>
             </div>
           </div>
           {/* Optional: Hero Image or Icon here? */}
@@ -71,7 +79,7 @@ function Home() {
         </section>
 
         {/* Trending Section */}
-        <section>
+        <section id="trending">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
             <h2>Trending Now</h2>
             <button className="btn-3d btn-secondary" style={{ height: '36px', fontSize: '0.8rem' }}>View All</button>
@@ -80,7 +88,7 @@ function Home() {
           {loading ? (
              <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>Loading songs...</div>
           ) : songs.length > 0 ? (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1.5rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '1rem' }}>
               {songs.map(song => (
                 <SongCard key={song.id} song={song} onPlay={playSong} />
               ))}

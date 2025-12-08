@@ -8,59 +8,48 @@ const Sidebar = () => {
   const isActive = (path) => pathname === path ? 'active' : '';
 
   return (
-    <aside style={{
-      width: 'var(--sidebar-width)',
-      height: '100vh',
-      position: 'fixed',
-      left: 0,
-      top: 0,
-      borderRight: '2px solid var(--border-color)',
-      background: 'var(--bg-main)',
-      padding: '24px 16px',
-      display: 'flex',
-      flexDirection: 'column',
-      zIndex: 100
-    }}>
+    <aside className="sidebar">
       {/* Logo */}
-      <div style={{ padding: '0 12px 32px 12px' }}>
-          <h2 style={{ fontSize: '1.5rem', color: 'var(--primary)', letterSpacing: '-0.5px' }}>
+      <div className="sidebar-header">
+          <h2 className="brand-title">
             Sangatamizh Music
           </h2>
        </div>
 
       {/* Navigation */}
-      <nav style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
+      <nav className="sidebar-nav">
         <Link to="/" className={`nav-item ${isActive('/')}`}>
-          <span>🏠</span> Home
+          <span>🏠</span> <span className="nav-text">Home</span>
         </Link>
         <Link to="/library" className={`nav-item ${isActive('/library')}`}>
-          <span>📚</span> Library
+          <span>📚</span> <span className="nav-text">Library</span>
         </Link>
         
-        {/* Always visible for testing, or check user existence if preferred */}
-        <Link to="/admin" className={`nav-item ${isActive('/admin')}`}>
-             <span>⚡</span> Admin
-        </Link>
+        {user && user.role === 'admin' && (
+          <Link to="/admin" className={`nav-item ${isActive('/admin')}`}>
+               <span>⚡</span> <span className="nav-text">Admin</span>
+          </Link>
+        )}
       </nav>
 
       {/* User Section */}
-      <div style={{ borderTop: '2px solid var(--border-color)', paddingTop: '16px' }}>
+      <div className="sidebar-footer">
         {user ? (
-          <div style={{ padding: '0 12px' }}>
+          <div className="user-info">
              {/* Gamification Stats */}
-             <div style={{ display: 'flex', gap: '12px', marginBottom: '12px', fontSize: '0.9rem', fontWeight: 'bold' }}>
-                <span style={{ color: '#0ea5e9' }} title="Daily Gems">💎 {stats?.gems || 0}</span>
-                <span style={{ color: '#f59e0b' }} title="Streak">🔥 {stats?.streak || 0}</span>
+             <div className="user-stats">
+                <span className="stat-item gems" title="Daily Gems">💎 {stats?.gems || 0}</span>
+                <span className="stat-item streak" title="Streak">🔥 {stats?.streak || 0}</span>
              </div>
-             <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '8px' }}>
-               Logged in as <br/> <strong style={{ color: 'white' }}>{user.email.split('@')[0]}</strong>
+             <p className="user-login-msg">
+               Logged in as <br/> <strong>{user.email.split('@')[0]}</strong>
              </p>
-             <button onClick={logout} className="btn-3d btn-secondary" style={{ width: '100%', height: '40px', fontSize: '0.8rem' }}>
+             <button onClick={logout} className="btn-3d btn-secondary logout-btn">
                Logout
              </button>
           </div>
         ) : (
-          <Link to="/login" className="btn-3d btn-primary" style={{ width: '100%', textAlign: 'center', textDecoration: 'none' }}>
+          <Link to="/login" className="btn-3d btn-primary login-btn">
             Login
           </Link>
         )}

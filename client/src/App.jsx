@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { MusicProvider } from './context/MusicContext';
 import Home from './pages/Home';
 import Login from './pages/Login';
+import TestDB from './pages/TestDB';
 import Library from './pages/Library';
 import AdminUpload from './pages/AdminUpload';
 import Sidebar from './components/Sidebar';
@@ -26,12 +27,17 @@ function App() {
         <Router>
           <div className="app-shell">
             <Sidebar />
-            <div className="main-content" style={{ marginLeft: 'var(--sidebar-width)', width: 'calc(100% - var(--sidebar-width))' }}>
+            <div className="main-content">
               <Routes>
                 <Route path="/" element={<Home />} />
+                <Route path="/test-db" element={<TestDB />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/library" element={<Library />} />
-                <Route path="/admin" element={<AdminUpload />} />
+                <Route path="/admin" element={
+                  <PrivateRoute adminOnly={true}>
+                    <AdminUpload />
+                  </PrivateRoute>
+                } />
               </Routes>
             </div>
           </div>

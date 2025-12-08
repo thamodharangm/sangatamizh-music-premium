@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { ref, set } from "firebase/database";
-import { db } from '../firebase';
+import { doc, setDoc } from "firebase/firestore";
+import { firestore } from '../firebase';
 
 const Login = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -26,13 +26,15 @@ const Login = () => {
   const saveUserToDB = async (user) => {
     try {
       if (!user) return;
-      const userRef = ref(db, 'users/' + user.uid);
-      await set(userRef, {
+      const userRef = doc(firestore, 'user', user.uid);
+      console.log("Login: Saving to Firestore 'user' collection...");
+      await setDoc(userRef, {
         email: user.email,
         displayName: user.displayName || '',
         photoURL: user.photoURL || '',
         lastLogin: new Date().toISOString()
-      });
+      }, { merge: true });
+      console.log("Login: Save complete.");
     } catch (e) {
       console.error("Error saving user to DB:", e);
     }
