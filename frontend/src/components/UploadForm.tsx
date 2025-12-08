@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
-import api from '../services/api';
+import { uploadSong } from '../services/upload.service';
 
 export default function UploadForm() {
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState('');
   const [artist, setArtist] = useState('');
+  const [album, setAlbum] = useState('');
+  const [genre, setGenre] = useState('');
   const [status, setStatus] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState(0);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -14,41 +17,37 @@ export default function UploadForm() {
     if (!title) return alert('Enter a title');
 
     setUploading(true);
-    setStatus('Initializing upload...');
+    setStatus('Uploading...');
+    setProgress(0);
 
     try {
-      // 1) Init upload
-      const init = await api.post('/upload/init', {
-        title,
-        artist,
-        filename: file.name,
-        contentType: file.type,
-      });
+      // Upload song using the new upload service
+      const result = await uploadSong(
+        file,
+        {
+          title,
+          artist: artist || 'Unknown Artist',
+          album: album || undefined,
+          genre: genre || undefined,
+        },
+        (progressData) => {
+          setProgress(progressData.percentage);
+          setStatus(`Uploading... ${progressData.percentage}%`);
+        }
+      );
       
-      const { signedUrl, uploadId } = init.data;
-      setStatus('Uploading to storage...');
-
-      // 2) Upload directly to S3
-      await fetch(signedUrl, {
-        method: 'PUT',
-        body: file,
-        headers: { 'Content-Type': file.type },
-      });
-
-      setStatus('Finalizing...');
-
-      // 3) Complete
-      await api.post('/upload/complete', { uploadId });
-      
-      setStatus('✓ Uploaded successfully! Processing...');
+      setStatus('✓ Uploaded successfully!');
       setFile(null);
       setTitle('');
       setArtist('');
+      setAlbum('');
+      setGenre('');
+      setProgress(0);
       
       setTimeout(() => setStatus(''), 3000);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Upload failed:', error);
-      setStatus('✗ Upload failed. Please try again.');
+      setStatus(`✗ Upload failed: ${error.message}`);
     } finally {
       setUploading(false);
     }
@@ -77,6 +76,30 @@ export default function UploadForm() {
           value={artist}
           onChange={e => setArtist(e.target.value)}
           placeholder="Artist name"
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          disabled={uploading}
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Album</label>
+        <input
+          type="text"
+          value={album}
+          onChange={e => setAlbum(e.target.value)}
+          placeholder="Album name (optional)"
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          disabled={uploading}
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Genre</label>
+        <input
+          type="text"
+          value={genre}
+          onChange={e => setGenre(e.target.value)}
+          placeholder="Genre (optional)"
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           disabled={uploading}
         />
