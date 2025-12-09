@@ -18,6 +18,8 @@ app.use((req, res, next) => {
 
 // Initialize Supabase
 const supabaseUrl = process.env.SUPABASE_URL || 'https://lemirqphbiyhmulyzzzg.supabase.co';
+console.log(`Starting Backend. Node Version: ${process.version}`);
+console.log(`Supabase URL: ${supabaseUrl}`);
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxlbWlycXBoYml5aG11bHljenpnIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NTE5MTYyNSwiZXhwIjoyMDgwNzY3NjI1fQ.MNy9qgdjwDUTpZeDE455jSPt_0Joct0L76jOdHz5DKc';
 const supabase = createClient(supabaseUrl, supabaseKey, {
   auth: {
@@ -57,7 +59,8 @@ app.get('/api/songs', async (req, res) => {
     if (error) throw error;
     res.json(data);
   } catch (err) {
-    res.status(500).json({ error: 'Failed to fetch songs' });
+    console.error('Error in /api/songs:', err);
+    res.status(500).json({ error: 'Failed to fetch songs', details: err.message });
   }
 });
 
