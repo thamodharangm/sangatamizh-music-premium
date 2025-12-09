@@ -171,10 +171,10 @@ app.post('/api/upload-from-yt', async (req, res) => {
     console.log('Processing YouTube Upload via yt-dlp (File Mode):', url);
 
     // 1. Get Metadata
+    // Note: Do NOT set a custom User-Agent when using browser spoofing (ios/android) as it causes a mismatch mismatch.
     const extraFlags = [
-        '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
         '--js-runtimes', 'node',
-        '--extractor-args', 'youtube:player_client=android',
+        '--extractor-args', 'youtube:player_client=ios',
     ];
     
     const metadataStdout = await ytDlpWrap.execPromise([
