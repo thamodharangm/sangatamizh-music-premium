@@ -191,29 +191,56 @@ app.post('/api/upload-from-yt', async (req, res) => {
         }
     }
 
-    // 1. Get Metadata (Robust Fallback System)
+    // 1. Get Metadata (Prioritize Pure JS ytdl-core)
     let videoId;
+    let metadataSuccess = false;
+
+    // Strategy A: Try @distube/ytdl-core FIRST (Lighter, often bypasses blocks)
     try {
-        console.log('Fetching metadata with yt-dlp...');
-        const metadataStdout = await ytDlpWrap.execPromise([
-            url, 
-            '--dump-json',
-            ...extraFlags
-        ]);
-        const info = JSON.parse(metadataStdout);
-        videoId = info.id;
-    } catch (metaError) {
-        console.warn('yt-dlp metadata fetch failed:', metaError.message);
-        console.log('Falling back to @distube/ytdl-core for metadata...');
+        console.log('Attempting metadata fetch with @distube/ytdl-core...');
+        const ytdl = require('@distube/ytdl-core');
         
-        try {
-            const ytdl = require('@distube/ytdl-core');
-            const info = await ytdl.getBasicInfo(url);
-            videoId = info.videoDetails.videoId;
-            console.log('Metadata fetched successfully via ytdl-core:', videoId);
-        } catch (coreError) {
-             throw new Error('All metadata fetch methods failed. Please try later or provide Cookies.');
+        // Use cookies agent if available
+        const agentOptions = {};
+        if (extraFlags.includes('--cookies')) {
+             // For ytdl-core, we'd need a specific Agent, but for now let's try standard request
+             // Cookies file support in ytdl-core is complex, relying on headers for now
         }
+
+        const info = await ytdl.getBasicInfo(url, {
+            requestOptions: {
+                headers: {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                     // Add cookie header if we could parse the file, but for now rely on clean User-Agent
+                }
+            }
+        });
+        videoId = info.videoDetails.videoId;
+        console.log('Metadata success via ytdl-core:', videoId);
+        metadataSuccess = true;
+    } catch (coreError) {
+        console.warn('ytdl-core metadata failed:', coreError.message);
+    }
+
+    // Strategy B: Fallback to yt-dlp (Heavy, but supports cookies file natively)
+    if (!metadataSuccess) {
+        try {
+            console.log('Falling back to yt-dlp for metadata...');
+            const metadataStdout = await ytDlpWrap.execPromise([
+                url, 
+                '--dump-json',
+                ...extraFlags
+            ]);
+            const info = JSON.parse(metadataStdout);
+            videoId = info.id;
+            metadataSuccess = true;
+        } catch (dlpError) {
+            console.error('yt-dlp metadata failed:', dlpError.message);
+        }
+    }
+
+    if (!metadataSuccess) {
+         throw new Error('All metadata fetch methods failed. YouTube is blocking this server IP.');
     }
 
     console.log(`Downloading ${videoId} to disk...`);
