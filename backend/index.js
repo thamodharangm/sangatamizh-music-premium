@@ -60,7 +60,11 @@ app.get('/api/songs', async (req, res) => {
     res.json(data);
   } catch (err) {
     console.error('Error in /api/songs:', err);
-    res.status(500).json({ error: 'Failed to fetch songs', details: err.message });
+    res.status(503).json({ 
+      error: 'Failed to fetch songs', 
+      details: err.message,
+      usedUrl: supabaseUrl 
+    });
   }
 });
 
