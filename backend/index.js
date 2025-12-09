@@ -168,34 +168,51 @@ app.post('/api/upload-from-yt', async (req, res) => {
   const tempFilePath = `./downloads/temp_${Date.now()}.mp3`;
   try {
     const { url, category, customMetadata } = req.body;
-    console.log('Processing YouTube Upload via yt-dlp (File Mode):', url);
-
-    // 1. Get Metadata
-    // Fix: Explicitly pass absolute path to Node binary to ensure yt-dlp can find the JS runtime
-    const nodePath = process.execPath; 
-    const extraFlags = [
-        '--js-runtimes', `node:${nodePath}`,
+    // 0. Setup Cookies & Flags
+    let extraFlags = [
+        '--js-runtimes', `node:${process.execPath}`,
         '--extractor-args', 'youtube:player_client=ios',
     ];
-    
-    const metadataStdout = await ytDlpWrap.execPromise([
-        url, 
-        '--dump-json',
-        ...extraFlags
-    ]);
-    const info = JSON.parse(metadataStdout);
-    const videoId = info.id;
+
+    if (process.env.YOUTUBE_COOKIES) {
+        const cookiePath = path.join(os.tmpdir(), 'cookies.txt');
+        if (!fs.existsSync(cookiePath)) {
+             fs.writeFileSync(cookiePath, process.env.YOUTUBE_COOKIES);
+             console.log('Cookies loaded from env to:', cookiePath);
+        }
+        extraFlags.push('--cookies', cookiePath);
+    }
+
+    // 1. Get Metadata (Robust Fallback System)
+    let videoId;
+    try {
+        console.log('Fetching metadata with yt-dlp...');
+        const metadataStdout = await ytDlpWrap.execPromise([
+            url, 
+            '--dump-json',
+            ...extraFlags
+        ]);
+        const info = JSON.parse(metadataStdout);
+        videoId = info.id;
+    } catch (metaError) {
+        console.warn('yt-dlp metadata fetch failed:', metaError.message);
+        console.log('Falling back to @distube/ytdl-core for metadata...');
+        
+        try {
+            const ytdl = require('@distube/ytdl-core');
+            const info = await ytdl.getBasicInfo(url);
+            videoId = info.videoDetails.videoId;
+            console.log('Metadata fetched successfully via ytdl-core:', videoId);
+        } catch (coreError) {
+             throw new Error('All metadata fetch methods failed. Please try later or provide Cookies.');
+        }
+    }
 
     console.log(`Downloading ${videoId} to disk...`);
 
     // 2. Download File to Disk (Native Spawn)
-    // Support for Cookies (The "Silver Bullet" for bot detection)
-    if (process.env.YOUTUBE_COOKIES) {
-        const cookiePath = path.join(os.tmpdir(), 'cookies.txt');
-        fs.writeFileSync(cookiePath, process.env.YOUTUBE_COOKIES);
-        console.log('Cookies loaded from env to:', cookiePath);
-        extraFlags.push('--cookies', cookiePath);
-    }
+    // Support for Cookies (The "Silver Bullet" for bot detection) 
+    // (Already handled in Step 0, extraFlags contains cookies now)
 
     try {
         console.log('Attepting download with yt-dlp...');
