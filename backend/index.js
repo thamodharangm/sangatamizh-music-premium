@@ -222,10 +222,16 @@ app.post('/api/upload-from-yt', async (req, res) => {
         console.warn('ytdl-core metadata failed:', coreError.message);
     }
 
-    // Strategy B: Fallback to yt-dlp (Heavy, but supports cookies file natively)
+    // Strategy B: Fallback to yt-dlp
     if (!metadataSuccess) {
         try {
             console.log('Falling back to yt-dlp for metadata...');
+            // Check for Proxy
+            if (process.env.PROXY_URL) {
+                console.log('Using Proxy for yt-dlp...');
+                extraFlags.push('--proxy', process.env.PROXY_URL);
+            }
+
             const metadataStdout = await ytDlpWrap.execPromise([
                 url, 
                 '--dump-json',
@@ -236,6 +242,32 @@ app.post('/api/upload-from-yt', async (req, res) => {
             metadataSuccess = true;
         } catch (dlpError) {
             console.error('yt-dlp metadata failed:', dlpError.message);
+        }
+    }
+    
+    // Strategy C: Invidious API (External Public Instance)
+    // This bypasses our server IP entirely for metadata
+    if (!metadataSuccess) {
+        try {
+            console.log('Falling back to Invidious API...');
+            // Extract ID from URL for API call
+            const idMatch = url.match(/(?:youtu\.be\/|youtube\.com\/watch\?v=|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
+            const tempId = idMatch ? idMatch[1] : null;
+            
+            if (tempId) {
+                // Use a reliable Invidious instance
+                const apiUrl = `https://invidious.jing.rocks/api/v1/videos/${tempId}`;
+                const fetch = require('node-fetch');
+                const res = await fetch(apiUrl);
+                if (res.ok) {
+                    const data = await res.json();
+                    videoId = data.videoId;
+                    console.log('Metadata success via Invidious API:', videoId);
+                    metadataSuccess = true;
+                }
+            }
+        } catch (invError) {
+            console.error('Invidious API failed:', invError.message);
         }
     }
 
