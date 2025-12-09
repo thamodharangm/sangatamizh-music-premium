@@ -171,7 +171,16 @@ app.post('/api/upload-from-yt', async (req, res) => {
     console.log('Processing YouTube Upload via yt-dlp (File Mode):', url);
 
     // 1. Get Metadata
-    const metadataStdout = await ytDlpWrap.execPromise([url, '--dump-json']);
+    const extraFlags = [
+        '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        '--js-runtimes', 'node'
+    ];
+    
+    const metadataStdout = await ytDlpWrap.execPromise([
+        url, 
+        '--dump-json',
+        ...extraFlags
+    ]);
     const info = JSON.parse(metadataStdout);
     const videoId = info.id;
 
@@ -196,7 +205,8 @@ app.post('/api/upload-from-yt', async (req, res) => {
         url,
         '-f', 'bestaudio',
         '--force-ipv4',
-        '-o', tempFilePath
+        '-o', tempFilePath,
+        ...extraFlags
       ]);
 
       child.stdout.on('data', (data) => console.log(`stdout: ${data}`));
