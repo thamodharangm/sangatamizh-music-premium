@@ -90,10 +90,16 @@ app.post('/api/upload-from-yt', async (req, res) => {
         try {
             console.log('[Meta] Level 1: Trying ytdl-core...');
             const ytdl = require('@distube/ytdl-core');
-            const info = await ytdl.getBasicInfo(url);
+            const info = await ytdl.getBasicInfo(url, {
+                requestOptions: {
+                    headers: {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                    }
+                }
+            });
             videoId = info.videoDetails.videoId;
             title = info.videoDetails.title;
-            cover = info.videoDetails.thumbnails.pop().url;
+            cover = info.videoDetails.thumbnails?.pop()?.url || info.videoDetails.thumbnails?.[0]?.url;
             console.log('[Meta] ✅ Level 1 SUCCESS: ytdl-core');
         } catch(e) { 
             console.log('[Meta] ❌ Level 1 FAILED: ytdl-core -', e.message); 
