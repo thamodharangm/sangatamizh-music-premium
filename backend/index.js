@@ -175,12 +175,14 @@ app.post('/api/upload-from-yt', async (req, res) => {
     ];
 
     if (process.env.YOUTUBE_COOKIES) {
+        console.log(`[DEBUG] YOUTUBE_COOKIES Env Var detected! Length: ${process.env.YOUTUBE_COOKIES.length}`);
         const cookiePath = path.join(os.tmpdir(), 'cookies.txt');
-        if (!fs.existsSync(cookiePath)) {
-             fs.writeFileSync(cookiePath, process.env.YOUTUBE_COOKIES);
-             console.log('Cookies loaded from env to:', cookiePath);
-        }
+        // Force write to ensure latest content
+        fs.writeFileSync(cookiePath, process.env.YOUTUBE_COOKIES);
+        console.log('Cookies written successfully to:', cookiePath);
         extraFlags.push('--cookies', cookiePath);
+    } else {
+        console.log('[DEBUG] YOUTUBE_COOKIES Env Var is MISSING or EMPTY.');
     }
 
     // 1. Get Metadata (Robust Fallback System)
