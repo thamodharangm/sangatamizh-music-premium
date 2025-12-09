@@ -190,18 +190,45 @@ app.post('/api/upload-from-yt', async (req, res) => {
 
         if (!videoId) throw new Error('MetaData Failed completely.');
 
-        // 4. Download: Try yt-dlp
+        // 4. Download: Use Invidious to get direct audio URL (bypasses YouTube bot detection)
         console.log(`Downloading ${videoId}...`);
-        try {
-             await exec(`${ytDlpBinaryPath} "${url}" -f bestaudio -o "${tempFile}" --no-warnings --force-ipv4 --js-runtimes "node:${process.execPath}" --extractor-args "youtube:player_client=ios" --cookies "${cookiePath}"`);
-        } catch(e) {
-            // 5. Download: Last Resort ytdl-core stream
-            console.log('yt-dlp download failed, trying stream...');
-            const ytdl = require('@distube/ytdl-core');
-            await new Promise((resolve, reject) => {
-                ytdl(url, { quality: 'highestaudio' }).pipe(fs.createWriteStream(tempFile))
-                .on('finish', resolve).on('error', reject);
-            });
+        let downloadSuccess = false;
+        
+        // Try getting audio URL from Invidious
+        const invMirrors = ['https://inv.tux.pizza', 'https://vid.uff.io', 'https://invidious.jing.rocks'];
+        for (const mirror of invMirrors) {
+            try {
+                console.log(`[Download] Trying to get audio URL from ${mirror}...`);
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 10000);
+                
+                const res = await fetch(`${mirror}/api/v1/videos/${videoId}`, { signal: controller.signal });
+                clearTimeout(timeoutId);
+                
+                if (res.ok) {
+                    const data = await res.json();
+                    // Get the best audio format
+                    const audioFormats = data.adaptiveFormats?.filter(f => f.type?.includes('audio')) || [];
+                    if (audioFormats.length > 0) {
+                        const bestAudio = audioFormats.sort((a, b) => (b.bitrate || 0) - (a.bitrate || 0))[0];
+                        console.log(`[Download] Found audio URL from ${mirror}`);
+                        
+                        // Download the audio file
+                        const audioRes = await fetch(bestAudio.url);
+                        const buffer = await audioRes.arrayBuffer();
+                        fs.writeFileSync(tempFile, Buffer.from(buffer));
+                        downloadSuccess = true;
+                        console.log('[Download] ✅ SUCCESS via Invidious');
+                        break;
+                    }
+                }
+            } catch(e) {
+                console.log(`[Download] Mirror ${mirror} failed:`, e.message);
+            }
+        }
+        
+        if (!downloadSuccess) {
+            throw new Error('Download failed: All methods blocked by YouTube bot detection. Please add a PROXY_URL environment variable or try a different video.');
         }
 
         // Upload
