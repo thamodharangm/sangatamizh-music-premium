@@ -189,23 +189,38 @@ app.post('/api/upload-from-yt', async (req, res) => {
             }
         }
 
-        // Level 4: Invidious API
+        // Level 4: Invidious API (Rotating Instances)
         if (!videoId) {
-            try {
-                console.log('[Meta] Trying Level 4: Invidious API');
-                const tempId = url.match(/(?:youtu\.be\/|youtube\.com\/watch\?v=|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/)?.[1];
-                if (tempId) {
-                    const apiRes = await fetch(`https://invidious.jing.rocks/api/v1/videos/${tempId}`);
-                    if (apiRes.ok) {
-                        const data = await apiRes.json();
-                        videoId = data.videoId;
-                        videoTitle = data.title;
-                        videoCover = data.videoThumbnails?.[0]?.url;
-                        console.log('[Meta] Success Level 4');
+            console.log('[Meta] Trying Level 4: Invidious API (Rotating Mirrors)');
+            const tempId = url.match(/(?:youtu\.be\/|youtube\.com\/watch\?v=|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/)?.[1];
+            
+            if (tempId) {
+                const instances = [
+                    'https://inv.tux.pizza', 
+                    'https://vid.uff.io',
+                    'https://invidious.jing.rocks',
+                    'https://inv.nadeko.net',
+                    'https://invidious.nerdvpn.de'
+                ];
+                
+                for (const instance of instances) {
+                    try {
+                        console.log(`[Meta] Trying Invidious Mirror: ${instance}`);
+                        const apiRes = await fetch(`${instance}/api/v1/videos/${tempId}`);
+                        if (apiRes.ok) {
+                            const data = await apiRes.json();
+                            videoId = data.videoId;
+                            videoTitle = data.title;
+                            videoCover = data.videoThumbnails?.[0]?.url;
+                            console.log(`[Meta] Success via ${instance}`);
+                            break; // Stop loop on success
+                        }
+                    } catch (e) {
+                        console.warn(`[Meta] Mirror ${instance} failed.`);
                     }
                 }
-            } catch (e) {
-                console.warn('[Meta] Failed Level 4:', e.message);
+            } else {
+                console.warn('[Meta] Could not extract ID for Invidious fallback.');
             }
         }
 
