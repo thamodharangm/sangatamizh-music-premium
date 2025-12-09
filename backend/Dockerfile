@@ -1,4 +1,4 @@
-FROM node:18-slim
+FROM node:20-slim
 
 # Install Python3 (Required for yt-dlp) and ffmpeg
 RUN apt-get update && \
