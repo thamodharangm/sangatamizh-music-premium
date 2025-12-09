@@ -1,508 +1,289 @@
-const express = require('express');
-const cors = require('cors');
-const { createClient } = require('@supabase/supabase-js');
-const multer = require('multer');
-const YTDlpWrap = require('yt-dlp-wrap').default;
-const fs = require('fs');
-const app = express();
 require('dotenv').config();
-
-app.use(cors());
-app.use(express.json());
-
-// Request Logger
-app.use((req, res, next) => {
-  console.log(`[${req.method}] ${req.url}`);
-  next();
-});
-
-const fetch = require('node-fetch');
-
-// Initialize Supabase
-let supabaseUrl = process.env.SUPABASE_URL;
-const fallbackUrl = 'https://lemirqphbiyhmulyczzg.supabase.co';
-
-// Sanitize URL: If missing or invalid (doesn't start with http), OR has known typo, use fallback
-if (!supabaseUrl || !supabaseUrl.startsWith('http') || supabaseUrl.includes('zzzg')) {
-  console.log(`Invalid or Typo in SUPABASE_URL ('${supabaseUrl}'). Switching to fallback.`);
-  supabaseUrl = fallbackUrl;
-}
-
-console.log(`Starting Backend. Node Version: ${process.version}`);
-console.log(`Supabase URL: ${supabaseUrl}`);
-
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxlbWlycXBoYml5aG11bHljenpnIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NTE5MTYyNSwiZXhwIjoyMDgwNzY3NjI1fQ.MNy9qgdjwDUTpZeDE455jSPt_0Joct0L76jOdHz5DKc';
-const supabase = createClient(supabaseUrl, supabaseKey, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false
-  },
-  global: {
-    fetch: fetch 
-  }
-});
-
-// Multer setup
-const storage = multer.memoryStorage();
-const upload = multer({ storage: storage });
-
-// Initialize yt-dlp
-// Initialize yt-dlp
-// Initialize yt-dlp
-const ytDlpWrap = new YTDlpWrap();
+const express = require('express');
+const { PrismaClient } = require('@prisma/client');
+const { createClient } = require('@supabase/supabase-js');
+const cors = require('cors');
+const multer = require('multer');
+const fs = require('fs');
 const path = require('path');
 const os = require('os');
-// Use temp directory for binary to avoid read-only FS issues on Render
-const ytDlpBinaryPath = path.join(os.tmpdir(), 'yt-dlp');
+const fetch = require('node-fetch');
+const YTDlpWrap = require('yt-dlp-wrap').default;
+const util = require('util');
+const exec = util.promisify(require('child_process').exec);
 
-(async () => {
-  try {
-    console.log(`Configuring yt-dlp at: ${ytDlpBinaryPath}`);
-    
-    // Check if it exists
-    if (!fs.existsSync(ytDlpBinaryPath)) {
-        console.log('Binary not found. Downloading Standalone yt-dlp binary...');
-        
-        // Determine correct URL for standalone binary (Bundles Python)
-        // For Render (Linux), we MUST use 'yt-dlp_linux' to avoid python dependency issues
-        let binaryUrl = 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp'; // Default
-        if (process.platform === 'linux') {
-            binaryUrl = 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_linux';
-        } else if (process.platform === 'win32') {
-            binaryUrl = 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe';
-        }
+/* 
+  SANGATAMIZH MUSIC BACKEND 
+  Fixed for Render Deployment + YouTube Download
+*/
 
-        console.log(`Fetching from: ${binaryUrl}`);
-        const res = await fetch(binaryUrl);
-        if (!res.ok) throw new Error(`Failed to download binary: ${res.statusText}`);
-        
-        const fileStream = fs.createWriteStream(ytDlpBinaryPath);
-        await new Promise((resolve, reject) => {
-            res.body.pipe(fileStream);
-            res.body.on('error', reject);
-            fileStream.on('finish', resolve);
-        });
-        
-        console.log('yt-dlp downloaded successfully to temp!');
-    } else {
-        console.log('yt-dlp binary already exists in temp.');
-    }
-    
-    // Ensure executable permissions
-    try {
-      if (process.platform !== 'win32') {
-         fs.chmodSync(ytDlpBinaryPath, '755');
-         console.log('Set 755 permissions on temp yt-dlp');
-      }
-    } catch (e) {
-      console.error('Failed to set permissions on yt-dlp:', e);
-    }
+const app = express();
+const prisma = new PrismaClient();
 
-    ytDlpWrap.setBinaryPath(ytDlpBinaryPath);
-    // Verify file size to ensure non-empty download
-    const stats = fs.statSync(ytDlpBinaryPath);
-    console.log(`yt-dlp verification: Size=${stats.size} bytes`);
+// CORS
+app.use(cors({ origin: '*' }));
+app.use(express.json());
 
-  } catch (e) {
-    console.error('Failed to setup yt-dlp:', e);
-  }
-})();
+// --- LOGGING & DIAGNOSTICS ---
+console.log('--- BACKEND STARTING ---');
+console.log('Node Version:', process.version);
+const PORT = process.env.PORT || 3002;
 
-// GET /api/songs
-app.get('/api/songs', async (req, res) => {
-  try {
-    const { data, error } = await supabase
-      .from('songs')
-      .select('*')
-      .order('created_at', { ascending: false });
-    if (error) throw error;
-    res.json(data);
-  } catch (err) {
-    console.error('Error in /api/songs:', err);
-    res.status(503).json({ 
-      error: 'Failed to fetch songs', 
-      details: err.message,
-      usedUrl: supabaseUrl 
-    });
-  }
+// --- DATABASE SETUP ---
+let supabaseUrl = process.env.SUPABASE_URL;
+let supabaseKey = process.env.SUPABASE_KEY;
+
+// Fix: Force correct URL if typo is detected in env vars
+const correctUrl = 'https://lemirqphbiyhmulyczzg.supabase.co';
+if (!supabaseUrl || !supabaseUrl.startsWith('http') || supabaseUrl.includes('zzzg')) {
+  console.log(`[Config] Fixing Supabase URL from '${supabaseUrl}' to '${correctUrl}'`);
+  supabaseUrl = correctUrl;
+}
+
+const supabase = createClient(supabaseUrl, supabaseKey, {
+  auth: { autoRefreshToken: false, persistSession: false },
+  global: { fetch: fetch }
 });
 
-// POST /api/yt-metadata (Uses Official API)
-app.post('/api/yt-metadata', async (req, res) => {
+// --- YOUTUBE DOWNLOADER SETUP ---
+const ytDlpBinaryPath = path.join(os.tmpdir(), 'yt-dlp');
+
+// Helper: Ensure yt-dlp binary exists (Standalone Linux version for Render)
+async function ensureYtDlp() {
+    if (!fs.existsSync(ytDlpBinaryPath)) {
+        console.log('[Setup] Downloading Standalone yt-dlp binary...');
+        let binaryUrl = 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp'; // Default
+        if (process.platform === 'linux') binaryUrl += '_linux';
+        else if (process.platform === 'win32') binaryUrl += '.exe';
+
+        try {
+            const res = await fetch(binaryUrl);
+            if (!res.ok) throw new Error(`Fetch failed: ${res.statusText}`);
+            const fileStream = fs.createWriteStream(ytDlpBinaryPath);
+            await new Promise((resolve, reject) => {
+                res.body.pipe(fileStream);
+                res.body.on('error', reject);
+                fileStream.on('finish', resolve);
+            });
+            fs.chmodSync(ytDlpBinaryPath, '755');
+            console.log('[Setup] yt-dlp installed successfully');
+        } catch (e) {
+            console.error('[Setup] Failed to download yt-dlp:', e);
+        }
+    }
+}
+ensureYtDlp();
+
+// Helper: Secure Cookie File Setup
+function setupCookies() {
+    // Priority 1: Env Var
+    if (process.env.YOUTUBE_COOKIES) {
+        const cookiePath = path.join(os.tmpdir(), 'cookies.txt');
+        fs.writeFileSync(cookiePath, process.env.YOUTUBE_COOKIES);
+        return cookiePath;
+    }
+    // Priority 2: Local File (Fallback)
+    const localCookies = path.join(__dirname, 'cookies.txt');
+    if (fs.existsSync(localCookies)) return localCookies;
+    
+    return null;
+}
+
+// Helper: Run yt-dlp command
+async function runYtDlp(args, options = {}) {
+    const flags = [
+        '--no-warnings',
+        '--no-check-certificate',
+        '--prefer-free-formats',
+        '--force-ipv4',
+        '--js-runtimes', `node:${process.execPath}`,
+        '--extractor-args', 'youtube:player_client=ios'
+    ];
+
+    const cookiePath = setupCookies();
+    if (cookiePath) flags.push('--cookies', cookiePath);
+
+    if (options.useProxy && process.env.PROXY_URL) {
+        flags.push('--proxy', process.env.PROXY_URL);
+    }
+
+    const command = `${ytDlpBinaryPath} ${args.join(' ')} ${flags.join(' ')}`;
+    console.log(`[Exec] ${command}`);
+    const { stdout } = await exec(command);
+    return stdout;
+}
+
+
+// --- ROUTES ---
+
+app.get('/', (req, res) => {
+  res.send('Sangatamizh Backend is Running!');
+});
+
+app.get('/api/songs', async (req, res) => {
   try {
-    const { url } = req.body;
-    console.log('Received metadata request for:', url);
-    const videoIdMatch = url.match(/(?:youtu\.be\/|youtube\.com\/watch\?v=|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
-    const videoId = videoIdMatch ? videoIdMatch[1] : null;
-
-    if (!videoId) return res.status(400).json({ error: 'Invalid URL' });
-
-    const API_KEY = 'AIzaSyD2UdnHiVDZGEkQZSeKiAzowVJ34BIML7s';
-    const apiUrl = `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${videoId}&key=${API_KEY}`;
-    
-    const response = await fetch(apiUrl);
-    const data = await response.json();
-    
-    if (!data.items || data.items.length === 0) return res.status(404).json({ error: 'Video not found' });
-
-    const snippet = data.items[0].snippet;
-    const thumbnails = snippet.thumbnails;
-    const coverUrl = thumbnails.maxres?.url || thumbnails.high?.url || thumbnails.medium?.url || thumbnails.default?.url;
-
-    res.json({
-      title: snippet.title,
-      artist: snippet.channelTitle,
-      coverUrl: coverUrl
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Metadata fetch failed' });
+    const songs = await prisma.song.findMany({ orderBy: { createdAt: 'desc' } });
+    res.json(songs);
+  } catch (err) {
+    console.error('Error in /api/songs:', err);
+    res.status(503).json({ error: 'Failed to fetch songs', details: err.message, usedUrl: supabaseUrl });
   }
 });
 
 /* 
   POST /api/upload-from-yt
-  File-based yt-dlp implementation (Most Robust)
+  FULL PRODUCTION IMPLEMENTATION
 */
 app.post('/api/upload-from-yt', async (req, res) => {
-  const tempFilePath = `./downloads/temp_${Date.now()}.mp3`;
-  try {
     const { url, category, customMetadata } = req.body;
-    // 0. Setup Cookies & Flags
-    let extraFlags = [
-        '--js-runtimes', `node:${process.execPath}`,
-        '--extractor-args', 'youtube:player_client=ios',
-    ];
+    const tempFilePath = path.join(os.tmpdir(), `temp_${Date.now()}.mp3`);
+    let videoId = null;
+    let videoTitle = 'Unknown Title';
+    let videoCover = null;
 
-    if (process.env.YOUTUBE_COOKIES) {
-        console.log(`[DEBUG] YOUTUBE_COOKIES Env Var detected! Length: ${process.env.YOUTUBE_COOKIES.length}`);
-        const cookiePath = path.join(os.tmpdir(), 'cookies.txt');
-        fs.writeFileSync(cookiePath, process.env.YOUTUBE_COOKIES);
-        console.log('Cookies written successfully to:', cookiePath);
-        extraFlags.push('--cookies', cookiePath);
-    } else {
-        // Fallback: Check for local cookies.txt file
-        const localCookieFile = path.join(__dirname, 'cookies.txt');
-        if (fs.existsSync(localCookieFile)) {
-             console.log('[DEBUG] Local cookies.txt found. Using it.');
-             extraFlags.push('--cookies', localCookieFile);
-        } else {
-             console.log('[DEBUG] YOUTUBE_COOKIES Env Var and local cookies.txt are MISSING.');
-        }
-    }
-
-    // 1. Get Metadata (Prioritize Pure JS ytdl-core)
-    let videoId;
-    let metadataSuccess = false;
-
-    // Strategy A: Try @distube/ytdl-core FIRST (Lighter, often bypasses blocks)
-    try {
-        console.log('Attempting metadata fetch with @distube/ytdl-core...');
-        const ytdl = require('@distube/ytdl-core');
-        
-        // Use cookies agent if available
-        const agentOptions = {};
-        if (extraFlags.includes('--cookies')) {
-             // For ytdl-core, we'd need a specific Agent, but for now let's try standard request
-             // Cookies file support in ytdl-core is complex, relying on headers for now
-        }
-
-        const info = await ytdl.getBasicInfo(url, {
-            requestOptions: {
-                headers: {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                     // Add cookie header if we could parse the file, but for now rely on clean User-Agent
-                }
-            }
-        });
-        videoId = info.videoDetails.videoId;
-        console.log('Metadata success via ytdl-core:', videoId);
-        metadataSuccess = true;
-    } catch (coreError) {
-        console.warn('ytdl-core metadata failed:', coreError.message);
-    }
-
-    // Strategy B: Fallback to yt-dlp
-    if (!metadataSuccess) {
-        try {
-            console.log('Falling back to yt-dlp for metadata...');
-            // Check for Proxy
-            if (process.env.PROXY_URL) {
-                console.log('Using Proxy for yt-dlp...');
-                extraFlags.push('--proxy', process.env.PROXY_URL);
-            }
-
-            const metadataStdout = await ytDlpWrap.execPromise([
-                url, 
-                '--dump-json',
-                ...extraFlags
-            ]);
-            const info = JSON.parse(metadataStdout);
-            videoId = info.id;
-            metadataSuccess = true;
-        } catch (dlpError) {
-            console.error('yt-dlp metadata failed:', dlpError.message);
-        }
-    }
-    
-    // Strategy C: Invidious API (External Public Instance)
-    // This bypasses our server IP entirely for metadata
-    if (!metadataSuccess) {
-        try {
-            console.log('Falling back to Invidious API...');
-            // Extract ID from URL for API call
-            const idMatch = url.match(/(?:youtu\.be\/|youtube\.com\/watch\?v=|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
-            const tempId = idMatch ? idMatch[1] : null;
-            
-            if (tempId) {
-                // Use a reliable Invidious instance
-                const apiUrl = `https://invidious.jing.rocks/api/v1/videos/${tempId}`;
-                const fetch = require('node-fetch');
-                const res = await fetch(apiUrl);
-                if (res.ok) {
-                    const data = await res.json();
-                    videoId = data.videoId;
-                    console.log('Metadata success via Invidious API:', videoId);
-                    metadataSuccess = true;
-                }
-            }
-        } catch (invError) {
-            console.error('Invidious API failed:', invError.message);
-        }
-    }
-
-    if (!metadataSuccess) {
-         throw new Error('All metadata fetch methods failed. YouTube is blocking this server IP.');
-    }
-
-    console.log(`Downloading ${videoId} to disk...`);
-
-    // 2. Download File to Disk (Native Spawn)
-    // Support for Cookies (The "Silver Bullet" for bot detection) 
-    // (Already handled in Step 0, extraFlags contains cookies now)
+    console.log(`[Upload] Processing: ${url}`);
 
     try {
-        console.log('Attepting download with yt-dlp...');
-        await new Promise((resolve, reject) => {
-            const child = spawn(ytDlpPath, [
-                url,
-                '-f', 'bestaudio',
-                '--force-ipv4',
-                '-o', tempFilePath,
-                ...extraFlags
-            ]);
-
-            child.stdout.on('data', (d) => console.log(`[yt-dlp] ${d}`));
-            child.stderr.on('data', (d) => console.error(`[yt-dlp err] ${d}`));
-
-            child.on('close', (code) => {
-                if (code === 0) resolve();
-                else reject(new Error(`yt-dlp exited with code ${code}`));
-            });
-        });
-        console.log('yt-dlp download success!');
-
-    } catch (ytDlpError) {
-        console.error('yt-dlp failed:', ytDlpError.message);
-        console.log('Falling back to @distube/ytdl-core...');
+        // --- STEP 1: METADATA FETCHING (Multi-Level Fallback) ---
         
-        // Fallback: Use @distube/ytdl-core (Pure JS)
-        const ytdl = require('@distube/ytdl-core');
-        await new Promise((resolve, reject) => {
-             const stream = ytdl(url, { 
-                 quality: 'highestaudio',
-                 requestOptions: {
-                     headers: {
-                         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-                     }
-                 }
+        // Level 1: @distube/ytdl-core
+        try {
+            console.log('[Meta] Trying Level 1: @distube/ytdl-core');
+            const ytdl = require('@distube/ytdl-core');
+            const info = await ytdl.getBasicInfo(url);
+            videoId = info.videoDetails.videoId;
+            videoTitle = info.videoDetails.title;
+            videoCover = info.videoDetails.thumbnails.pop().url;
+            console.log('[Meta] Success Level 1');
+        } catch (e) {
+            console.warn('[Meta] Failed Level 1:', e.message);
+        }
+
+        // Level 2: yt-dlp (Standard + Cookies)
+        if (!videoId) {
+            try {
+                console.log('[Meta] Trying Level 2: yt-dlp');
+                const json = await runYtDlp([url, '--dump-json']);
+                const info = JSON.parse(json);
+                videoId = info.id;
+                videoTitle = info.title;
+                videoCover = info.thumbnail;
+                console.log('[Meta] Success Level 2');
+            } catch (e) {
+                console.warn('[Meta] Failed Level 2:', e.message);
+            }
+        }
+
+        // Level 3: yt-dlp + PROXY
+        if (!videoId && process.env.PROXY_URL) {
+            try {
+                console.log('[Meta] Trying Level 3: yt-dlp + PROXY');
+                const json = await runYtDlp([url, '--dump-json'], { useProxy: true });
+                const info = JSON.parse(json);
+                videoId = info.id;
+                videoTitle = info.title;
+                videoCover = info.thumbnail;
+                console.log('[Meta] Success Level 3');
+            } catch (e) {
+                console.warn('[Meta] Failed Level 3:', e.message);
+            }
+        }
+
+        // Level 4: Invidious API
+        if (!videoId) {
+            try {
+                console.log('[Meta] Trying Level 4: Invidious API');
+                const tempId = url.match(/(?:youtu\.be\/|youtube\.com\/watch\?v=|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/)?.[1];
+                if (tempId) {
+                    const apiRes = await fetch(`https://invidious.jing.rocks/api/v1/videos/${tempId}`);
+                    if (apiRes.ok) {
+                        const data = await apiRes.json();
+                        videoId = data.videoId;
+                        videoTitle = data.title;
+                        videoCover = data.videoThumbnails?.[0]?.url;
+                        console.log('[Meta] Success Level 4');
+                    }
+                }
+            } catch (e) {
+                console.warn('[Meta] Failed Level 4:', e.message);
+            }
+        }
+
+        if (!videoId) throw new Error('CRITICAL: All metadata methods failed. YouTube blocked server IP.');
+
+        // --- STEP 2: DOWNLOAD FILE ---
+        console.log(`[Download] Starting download for ID: ${videoId}`);
+        let downloadSuccess = false;
+
+        // Try yt-dlp
+        try {
+             await runYtDlp([url, '-f', 'bestaudio', '-o', tempFilePath]);
+             downloadSuccess = true;
+        } catch (e) {
+             console.warn('[Download] Standard Failed:', e.message);
+        }
+
+        // Try Proxy
+        if (!downloadSuccess && process.env.PROXY_URL) {
+             try {
+                 await runYtDlp([url, '-f', 'bestaudio', '-o', tempFilePath], { useProxy: true });
+                 downloadSuccess = true;
+             } catch (e) {
+                 console.warn('[Download] Proxy Failed:', e.message);
+             }
+        }
+
+        // Try ytdl-core stream (Last Resort)
+        if (!downloadSuccess) {
+             console.log('[Download] Last Resort: ytdl-core...');
+             const ytdl = require('@distube/ytdl-core');
+             await new Promise((resolve, reject) => {
+                 ytdl(url, { quality: 'highestaudio' })
+                    .pipe(fs.createWriteStream(tempFilePath))
+                    .on('finish', resolve)
+                    .on('error', reject);
              });
-             
-             stream.pipe(fs.createWriteStream(tempFilePath))
-                   .on('finish', resolve)
-                   .on('error', reject);
+             downloadSuccess = true;
+        }
+
+        if (!downloadSuccess) throw new Error('Download failed completely.');
+
+        // --- STEP 3: UPLOAD TO STORAGE ---
+        const fileBuffer = fs.readFileSync(tempFilePath);
+        const filename = `songs/${Date.now()}_${videoId}.mp3`;
+        
+        const { error: uploadError } = await supabase.storage
+            .from('music-files')
+            .upload(filename, fileBuffer, { contentType: 'audio/mpeg' });
+
+        if (uploadError) throw uploadError;
+
+        const publicUrl = supabase.storage.from('music-files').getPublicUrl(filename).data.publicUrl;
+        
+        // Cleanup
+        try { fs.unlinkSync(tempFilePath); } catch (e) {}
+
+        // --- STEP 4: SAVE TO DB ---
+        const newSong = await prisma.song.create({
+            data: {
+                title: customMetadata?.title || videoTitle,
+                artist: customMetadata?.artist || 'Unknown Artist',
+                url: publicUrl,
+                coverUrl: customMetadata?.coverUrl || videoCover || 'https://via.placeholder.com/150',
+                category: category || 'Tamil'
+            }
         });
-        console.log('ytdl-core download success!');
+
+        res.status(201).json(newSong);
+
+    } catch (err) {
+        console.error('CRITICAL UPLOAD ERROR:', err);
+        try { if (fs.existsSync(tempFilePath)) fs.unlinkSync(tempFilePath); } catch (e) {}
+        res.status(500).json({ error: 'Upload Failed', details: err.message });
     }
-
-    console.log(`Download complete. Reading file...`);
-    
-    // 3. Read File
-    if (!fs.existsSync(tempFilePath)) {
-      throw new Error('File was not created by yt-dlp');
-    }
-    const fileBuffer = fs.readFileSync(tempFilePath);
-    
-    console.log(`Uploading ${fileBuffer.length} bytes to Supabase...`);
-
-    // 4. Upload to Supabase
-    const filename = `songs/${Date.now()}_${videoId}.mp3`;
-    
-    let publicUrl;
-    try {
-      const { error: uploadError } = await supabase
-        .storage
-        .from('music_assets')
-        .upload(filename, fileBuffer, { 
-          contentType: 'audio/mpeg',
-          upsert: false
-        });
-      
-      if (uploadError) throw uploadError;
-
-      const { data } = supabase.storage.from('music_assets').getPublicUrl(filename);
-      publicUrl = data.publicUrl;
-    } catch (upErr) {
-       console.error('Supabase Upload Call Failed:', upErr);
-       throw new Error(`Supabase Upload Failed: ${upErr.message || upErr}`);
-    }
-
-    // 5. Save to DB
-    const { data: dbData, error: dbError } = await supabase
-      .from('songs')
-      .insert({
-        id: require('crypto').randomUUID(), // FIX: Generate ID manually
-        title: customMetadata?.title || info.title,
-        artist: customMetadata?.artist || info.uploader,
-        category: category || 'General',
-        cover_url: customMetadata?.coverUrl || info.thumbnail,
-        file_url: publicUrl,
-        source_url: url
-      })
-      .select();
-
-    if (dbError) throw new Error(`DB Insert Failed: ${dbError.message}`);
-
-    // Cleanup
-    try { fs.unlinkSync(tempFilePath); } catch (e) { console.error('Cleanup failed:', e); }
-
-    res.json({ success: true, song: dbData[0] });
-
-  } catch (error) {
-    console.error('YT-DLP Error:', error);
-    // Cleanup on error too
-    try { if (fs.existsSync(tempFilePath)) fs.unlinkSync(tempFilePath); } catch (e) {}
-    res.status(500).json({ error: 'Download failed: ' + error.message });
-  }
 });
 
-// POST /api/upload-file
-app.post('/api/upload-file', upload.fields([{ name: 'audio', maxCount: 1 }, { name: 'cover', maxCount: 1 }]), async (req, res) => {
-  try {
-    const { title, artist, album, category } = req.body;
-    const audioFile = req.files['audio'] ? req.files['audio'][0] : null;
-    const coverFile = req.files['cover'] ? req.files['cover'][0] : null;
-
-    if (!audioFile) return res.status(400).json({ error: 'No audio file' });
-
-    const audioFilename = `songs/${Date.now()}_${audioFile.originalname}`;
-    const { error: audioUploadError } = await supabase.storage.from('music_assets').upload(audioFilename, audioFile.buffer, { contentType: audioFile.mimetype });
-    if (audioUploadError) throw audioUploadError;
-    const { data: { publicUrl: audioUrl } } = supabase.storage.from('music_assets').getPublicUrl(audioFilename);
-
-    let coverUrl = 'https://via.placeholder.com/300?text=Music'; 
-    if (coverFile) {
-       const coverFilename = `covers/${Date.now()}_${coverFile.originalname}`;
-       const { error: coverUploadError } = await supabase.storage.from('music_assets').upload(coverFilename, coverFile.buffer, { contentType: coverFile.mimetype });
-       if (!coverUploadError) {
-         const { data: { publicUrl } } = supabase.storage.from('music_assets').getPublicUrl(coverFilename);
-         coverUrl = publicUrl;
-       }
-    }
-
-    const { data: dbData, error: dbError } = await supabase.from('songs').insert({
-        id: require('crypto').randomUUID(), // FIX: Generate ID manually
-        title: title || 'Unknown Title',
-        artist: artist || 'Unknown Artist',
-        category: category || 'General',
-        cover_url: coverUrl,
-        file_url: audioUrl,
-        source_url: 'file_upload'
-    }).select();
-
-    if (dbError) throw dbError;
-    res.json({ success: true, song: dbData[0] });
-
-  } catch (error) {
-    console.error('File Upload Error:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-/*
-  Route: DELETE /api/songs/:id
-  Delete song from DB and Storage
-*/
-app.delete('/api/songs/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    console.log(`[DELETE] Request for ID: ${id}`);
-    
-    // 1. Fetch song details to get file paths
-    const { data: song, error: fetchError } = await supabase
-      .from('songs')
-      .select('*')
-      .eq('id', id)
-      .single();
-    
-    if (fetchError) {
-       console.error('[DELETE] Fetch Error:', fetchError);
-       return res.status(404).json({ error: 'Song not found in DB' });
-    }
-    console.log('[DELETE] Found song:', song.title);
-
-    // 2. Extract storage paths from URLs
-    const getPath = (fullUrl) => {
-       if (!fullUrl) return null;
-       try {
-         const urlObj = new URL(fullUrl);
-         // Path usually: /storage/v1/object/public/music_assets/songs/xyz.mp3
-         // We need: songs/xyz.mp3
-         const pathParts = urlObj.pathname.split('music_assets/');
-         if (pathParts.length > 1) return decodeURIComponent(pathParts[1]);
-         return null;
-       } catch (e) { return null; }
-    };
-
-    const filesToDelete = [];
-    if (song.file_url) filesToDelete.push(getPath(song.file_url));
-    if (song.cover_url && !song.cover_url.includes('placeholder')) filesToDelete.push(getPath(song.cover_url));
-    
-    const validFiles = filesToDelete.filter(f => f);
-    console.log('[DELETE] Files to remove:', validFiles);
-
-    // 3. Delete files from Storage (Soft Fail)
-    if (validFiles.length > 0) {
-      const { error: storageError } = await supabase
-        .storage
-        .from('music_assets')
-        .remove(validFiles);
-      
-      if (storageError) console.error('[DELETE] Storage Error (Ignored):', storageError);
-      else console.log('[DELETE] Storage cleanup success');
-    }
-
-    // 4. Delete record from DB
-    const { error: deleteError } = await supabase
-      .from('songs')
-      .delete()
-      .eq('id', id);
-
-    if (deleteError) {
-      console.error('[DELETE] DB Delete Error:', deleteError);
-      throw deleteError;
-    }
-
-    console.log('[DELETE] Success');
-    res.json({ success: true, message: 'Song deleted successfully' });
-
-  } catch (error) {
-    console.error('Delete Error:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-const PORT = process.env.PORT || 3002;
+// Start Server
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
