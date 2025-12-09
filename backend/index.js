@@ -52,7 +52,7 @@ async function ensureYtDlp() {
 }
 ensureYtDlp();
 
-app.get('api/songs', async (req, res) => {
+app.get('/api/songs', async (req, res) => {
     try {
         const songs = await prisma.song.findMany({ orderBy: { createdAt: 'desc' }});
         res.json(songs);
