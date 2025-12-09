@@ -1,71 +1,64 @@
 import { useMusic } from '../context/MusicContext';
+import './MusicPlayer.css';
 
 const MusicPlayer = () => {
-  const { currentSong, isPlaying, togglePlay } = useMusic();
+  const { 
+    currentSong, 
+    isPlaying, 
+    togglePlay, 
+    nextSong, 
+    prevSong,
+    currentTime,
+    duration,
+    seek 
+  } = useMusic();
 
   if (!currentSong) return null;
 
+  const progressPercent = duration ? (currentTime / duration) * 100 : 0;
+
+  const handleSeek = (e) => {
+    const width = e.currentTarget.clientWidth;
+    const clickX = e.nativeEvent.offsetX;
+    const newTime = (clickX / width) * duration;
+    seek(newTime);
+  };
+
   return (
-    <div className="glass-panel" style={{
-      position: 'fixed',
-      bottom: '20px',
-      left: '50%',
-      transform: 'translateX(-50%)',
-      width: '90%',
-      maxWidth: '800px',
-      padding: '1rem 2rem',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      zIndex: 1000,
-      backdropFilter: 'blur(20px)',
-      background: 'rgba(15, 23, 42, 0.85)',
-      border: '1px solid rgba(255, 255, 255, 0.1)',
-      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5)'
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-        <div style={{ 
-          width: '50px', 
-          height: '50px', 
-          borderRadius: '8px', 
-          background: `url(${currentSong.coverUrl || 'https://via.placeholder.com/50'}) center/cover`,
-          border: '1px solid rgba(255,255,255,0.1)' 
-        }} />
-        <div>
-          <h4 style={{ margin: 0, fontSize: '1rem', color: 'white' }}>{currentSong.title}</h4>
-          <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-muted)' }}>{currentSong.artist}</p>
+    <div className="music-player">
+      <div className="mp-song-info">
+        <div 
+          className="mp-art" 
+          style={{ backgroundImage: `url(${currentSong.coverUrl || 'https://via.placeholder.com/50'})` }} 
+        />
+        <div className="mp-details">
+          <h4 className="mp-title">{currentSong.title}</h4>
+          <p className="mp-artist">{currentSong.artist}</p>
         </div>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-        <button className="control-btn" style={{ background: 'none', color: 'var(--text-muted)', fontSize: '1.2rem' }}>
+      <div className="mp-controls">
+        <button className="mp-btn-mini" onClick={prevSong} aria-label="Previous">
           ⏮
         </button>
         <button 
           onClick={togglePlay}
-          style={{ 
-            width: '45px', 
-            height: '45px', 
-            borderRadius: '50%', 
-            background: 'var(--primary-color)',
-            color: 'white',
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'center',
-            fontSize: '1.2rem',
-            boxShadow: '0 0 15px rgba(99, 102, 241, 0.5)'
-          }}
+          className="mp-play-btn"
+          aria-label={isPlaying ? 'Pause' : 'Play'}
         >
           {isPlaying ? '⏸' : '▶'}
         </button>
-        <button className="control-btn" style={{ background: 'none', color: 'var(--text-muted)', fontSize: '1.2rem' }}>
+        <button className="mp-btn-mini" onClick={nextSong} aria-label="Next">
           ⏭
         </button>
       </div>
-      
-      {/* Progress bar placeholder */}
-      <div style={{ width: '30%', height: '4px', background: 'rgba(255,255,255,0.1)', borderRadius: '2px', overflow: 'hidden' }}>
-        <div style={{ width: '0%', height: '100%', background: 'var(--secondary-color)' }}></div>
+
+      {/* Progress Bar (Interactive) */}
+      <div className="mp-progress-container" onClick={handleSeek}>
+        <div 
+          className="mp-progress-bar" 
+          style={{ width: `${progressPercent}%` }}
+        ></div>
       </div>
     </div>
   );

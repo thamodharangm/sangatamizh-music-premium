@@ -22,12 +22,14 @@ const SongCard = ({ song, onPlay }) => {
         onMouseEnter={(e) => {
           e.currentTarget.style.transform = 'translateY(-4px)';
           e.currentTarget.style.background = 'rgba(30, 41, 59, 0.6)';
-          e.currentTarget.querySelector('.play-overlay').style.opacity = '1';
+          const overlay = e.currentTarget.querySelector('.play-overlay');
+          if(overlay) overlay.style.opacity = '1';
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.transform = 'translateY(0)';
           e.currentTarget.style.background = 'rgba(30, 41, 59, 0.4)';
-          e.currentTarget.querySelector('.play-overlay').style.opacity = '0';
+          const overlay = e.currentTarget.querySelector('.play-overlay');
+          if(overlay) overlay.style.opacity = '0';
         }}
       >
         <div style={{ 
@@ -56,6 +58,7 @@ const SongCard = ({ song, onPlay }) => {
             justifyContent: 'center',
             opacity: 0,
             transition: 'all 0.3s ease',
+            pointerEvents: 'none' // Let clicks pass through to card
           }}>
              <div style={{
                width: '50px',
@@ -99,9 +102,6 @@ const SongCard = ({ song, onPlay }) => {
         </div>
       </div>
       <style>{`
-        .card-flat:hover .play-overlay {
-           opacity: 1;
-        }
         .card-flat:hover .card-image {
            transform: scale(1.05);
         }

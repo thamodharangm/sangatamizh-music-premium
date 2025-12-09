@@ -88,9 +88,9 @@ function Home() {
           {loading ? (
              <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>Loading songs...</div>
           ) : songs.length > 0 ? (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '1rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1.5rem' }}>
               {songs.map(song => (
-                <SongCard key={song.id} song={song} onPlay={playSong} />
+                <SongCard key={song.id} song={song} onPlay={() => playSong(song, songs)} />
               ))}
             </div>
           ) : (
@@ -103,7 +103,7 @@ function Home() {
         {/* Features / Info Grid */}
         <section style={{ marginTop: '4rem' }}>
           <h3 style={{ marginBottom: '1.5rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontSize: '1rem', letterSpacing: '1px' }}>
-            Why Sangtamizh?
+            Why Sangatamizh?
           </h3>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem' }}>
             <div className="card-flat">

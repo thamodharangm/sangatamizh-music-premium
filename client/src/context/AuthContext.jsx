@@ -18,12 +18,12 @@ export const AuthProvider = ({ children }) => {
   
   // Gamification State (Persisted in LocalStorage for demo)
   const [stats, setStats] = useState(() => {
-    const saved = localStorage.getItem('sangtamizh_stats');
+    const saved = localStorage.getItem('sangatamizh_stats');
     return saved ? JSON.parse(saved) : { gems: 1240, streak: 12 };
   });
 
   useEffect(() => {
-    localStorage.setItem('sangtamizh_stats', JSON.stringify(stats));
+    localStorage.setItem('sangatamizh_stats', JSON.stringify(stats));
   }, [stats]);
 
   const updateStats = (type) => {

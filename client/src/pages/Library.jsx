@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import api from '../api/axios';
-import SongCard from '../components/SongCard'; 
-import { useMusic } from '../context/MusicContext';
+import SongCard from '../components/SongCard'; // Import unified card
+import { useMusic } from '../context/MusicContext'; // Import playback hook
 
 const Library = () => {
   const [songs, setSongs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { playSong } = useMusic();
+  const { playSong } = useMusic(); // Access global player
 
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -36,15 +36,16 @@ const Library = () => {
   );
 
   return (
-    <div style={{ padding: '2rem 0', maxWidth: '1000px', margin: '0 auto' }}>
+    <div style={{ padding: '2rem 1rem', maxWidth: '1000px', margin: '0 auto' }}>
       <div className="library-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', borderBottom: '2px solid var(--border-color)', paddingBottom: '1rem' }}>
-        <h1 style={{ color: 'white' }}>Library</h1>
+        <h1 style={{ color: 'white', margin: 0 }}>Library</h1>
         <input 
           type="text" 
           placeholder="Search songs..." 
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="input-flat search-input"
+          style={{ maxWidth: '300px' }}
         />
       </div>
       

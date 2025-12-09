@@ -22,7 +22,7 @@ const TestDB = () => {
             await setDoc(testRef, {
                 timestamp: new Date().toISOString(),
                 test: 'success',
-                message: 'Hello from Sangtamizh Test'
+                message: 'Hello from Sangatamizh Test'
             });
             log('✅ WRITE Successful!');
 

@@ -40,6 +40,10 @@
   padding-top: 16px;
 }
 
+.mobile-logout, .mobile-login {
+  display: none !important;
+}
+
 .user-info {
   padding: 0 12px;
 }
@@ -52,8 +56,12 @@
   font-weight: bold;
 }
 
-.stat-item.gems { color: #0ea5e9; }
-.stat-item.streak { color: #f59e0b; }
+.stat-item.gems {
+  color: #0ea5e9;
+}
+.stat-item.streak {
+  color: #f59e0b;
+}
 
 .user-login-msg {
   font-size: 0.9rem;
@@ -99,7 +107,8 @@
   }
 
   /* Hide Header & Footer on Mobile to save space */
-  .sidebar-header, .sidebar-footer {
+  .sidebar-header,
+  .sidebar-footer {
     display: none;
   }
 
@@ -126,10 +135,34 @@
   .nav-item span:first-child {
     font-size: 1.5rem;
   }
-  
+
   /* Active state for mobile (Text color change) */
   .nav-item.active {
     color: var(--primary);
+  }
+
+  /* Show Mobile Logout & Login */
+  .mobile-logout, .mobile-login {
+    display: flex !important;
+    flex-direction: column !important; /* Stack icon and text */
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    color: var(--text-muted); /* Default color */
+    text-decoration: none; /* For the Link component */
+    font-size: 0.75rem; /* Match other nav items */
+    padding: 8px 12px; /* Match nav item padding */
+    align-items: center; /* Center content */
+    gap: 4px; /* Gap between icon and text */
+  }
+  
+  .mobile-logout span:first-child, .mobile-login span:first-child {
+      font-size: 1.5rem; /* Match other icons size */
+  }
+  
+  .mobile-logout:active, .mobile-login:active {
+    color: var(--secondary); /* Feedback on press */
   }
 
   /* Adjust Main Content */
@@ -144,22 +177,24 @@
   .home-container {
     padding-top: 1rem;
   }
-  
-  h1 { font-size: 2rem; }
-  
+
+  h1 {
+    font-size: 2rem;
+  }
+
   /* Song Card Grid */
   div[style*="grid-template-columns"] {
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) !important;
     gap: 1rem !important;
   }
-  
+
   /* Music Player Positioning on Mobile */
   .glass-panel {
     bottom: 80px !important; /* Above the 60-70px nav bar */
     width: 95% !important;
     padding: 0.8rem 1rem !important;
   }
-  
+
   /* --- Library Header Responsive Fixes --- */
   .library-header {
     flex-direction: column;
@@ -171,7 +206,7 @@
   }
 
   /* --- Admin Layout Refinements --- */
-  
+
   /* Admin Tabs Fit Screen */
   .admin-tabs {
     justify-content: space-between;
@@ -183,7 +218,7 @@
     font-size: 0.85rem !important; /* Smaller font to fit */
     white-space: nowrap;
   }
-  
+
   /* 1. Admin Table -> Card View (Mobile) */
   .admin-table thead {
     display: none;
@@ -202,7 +237,7 @@
     align-items: center;
     padding: 0.5rem 0 !important;
     text-align: right;
-    border-bottom: 1px solid rgba(255,255,255,0.05);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   }
   .admin-table tbody td:last-child {
     border-bottom: none;
