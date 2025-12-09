@@ -16,15 +16,29 @@ app.use((req, res, next) => {
   next();
 });
 
+const fetch = require('node-fetch');
+
 // Initialize Supabase
-const supabaseUrl = process.env.SUPABASE_URL || 'https://lemirqphbiyhmulyzzzg.supabase.co';
+let supabaseUrl = process.env.SUPABASE_URL;
+const fallbackUrl = 'https://lemirqphbiyhmulyzzzg.supabase.co';
+
+// Sanitize URL: If missing or invalid (doesn't start with http), use fallback
+if (!supabaseUrl || !supabaseUrl.startsWith('http')) {
+  console.log(`Invalid or missing SUPABASE_URL ('${supabaseUrl}'). Using fallback.`);
+  supabaseUrl = fallbackUrl;
+}
+
 console.log(`Starting Backend. Node Version: ${process.version}`);
 console.log(`Supabase URL: ${supabaseUrl}`);
+
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxlbWlycXBoYml5aG11bHljenpnIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NTE5MTYyNSwiZXhwIjoyMDgwNzY3NjI1fQ.MNy9qgdjwDUTpZeDE455jSPt_0Joct0L76jOdHz5DKc';
 const supabase = createClient(supabaseUrl, supabaseKey, {
   auth: {
     autoRefreshToken: false,
     persistSession: false
+  },
+  global: {
+    fetch: fetch 
   }
 });
 
