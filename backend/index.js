@@ -17,7 +17,7 @@ app.use((req, res, next) => {
 });
 
 // Initialize Supabase
-const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseUrl = process.env.SUPABASE_URL || 'https://lemirqphbiyhmulyzzzg.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxlbWlycXBoYml5aG11bHljenpnIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NTE5MTYyNSwiZXhwIjoyMDgwNzY3NjI1fQ.MNy9qgdjwDUTpZeDE455jSPt_0Joct0L76jOdHz5DKc';
 const supabase = createClient(supabaseUrl, supabaseKey, {
   auth: {
