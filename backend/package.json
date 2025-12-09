@@ -11,6 +11,9 @@
   "license": "ISC",
   "type": "commonjs",
   "description": "",
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "dependencies": {
     "@distube/ytdl-core": "^4.16.12",
     "@prisma/client": "^6.19.0",
