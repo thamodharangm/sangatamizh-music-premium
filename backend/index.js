@@ -48,28 +48,37 @@ const upload = multer({ storage: storage });
 
 // Initialize yt-dlp
 // Initialize yt-dlp
+// Initialize yt-dlp
 const ytDlpWrap = new YTDlpWrap();
+const path = require('path');
+const ytDlpBinaryPath = path.join(__dirname, 'yt-dlp');
+
 (async () => {
   try {
-    console.log('Checking for yt-dlp binary...');
+    console.log(`Checking for yt-dlp binary at: ${ytDlpBinaryPath}`);
+    
+    // Debug: List files in current dir
+    console.log('Current directory files:', fs.readdirSync(__dirname));
+
     // Ensure binary exists
-    if (!fs.existsSync('./yt-dlp')) {
+    if (!fs.existsSync(ytDlpBinaryPath)) {
         console.log('Downloading yt-dlp binary from GitHub...');
-        await YTDlpWrap.downloadFromGithub();
+        await YTDlpWrap.downloadFromGithub(ytDlpBinaryPath); // Pass path to download
         console.log('yt-dlp downloaded successfully!');
     }
     
     // Ensure executable permissions (Linux/Render)
     try {
       if (process.platform !== 'win32') {
-         fs.chmodSync('./yt-dlp', '755');
+         fs.chmodSync(ytDlpBinaryPath, '755');
          console.log('Set 755 permissions on yt-dlp');
       }
     } catch (e) {
       console.error('Failed to set permissions on yt-dlp:', e);
     }
 
-    ytDlpWrap.setBinaryPath('./yt-dlp');
+    ytDlpWrap.setBinaryPath(ytDlpBinaryPath);
+    console.log(`yt-dlp wrapper configured with path: ${ytDlpBinaryPath}`);
   } catch (e) {
     console.error('Failed to setup yt-dlp:', e);
   }
@@ -145,13 +154,15 @@ app.post('/api/upload-from-yt', async (req, res) => {
     console.log(`Downloading ${videoId} to disk...`);
 
     // 2. Download File to Disk (Native Spawn)
+    // 2. Download File to Disk (Native Spawn)
     console.log('Spawning yt-dlp process...');
     const { spawn } = require('child_process');
-    const path = require('path');
-    const ytDlpPath = path.resolve(__dirname, 'yt-dlp');
+    const ytDlpPath = path.join(__dirname, 'yt-dlp'); // Re-resolve or use global if variable scope allowed (it's not, const path redefined)
     
-    console.log(`yt-dlp Absolute Path: ${ytDlpPath}`);
+    console.log(`yt-dlp Absolute Path for spawn: ${ytDlpPath}`);
     if (!fs.existsSync(ytDlpPath)) {
+       // Debug: List dir again if missing
+       console.log('Critical: yt-dlp missing. Dir list:', fs.readdirSync(__dirname));
        throw new Error(`yt-dlp binary NOT found at ${ytDlpPath}`);
     }
 
