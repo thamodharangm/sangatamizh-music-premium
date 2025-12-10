@@ -700,4 +700,10 @@
     opacity: 0.8;
   }
 }
+
+/* 8️⃣ Features Grid Mobile Fixes (Safe Stack) */
+@media (max-width: 768px) {
+  .features-grid {
+    grid-template-columns: 1fr !important; /* Stack vertically */
+  }
 }

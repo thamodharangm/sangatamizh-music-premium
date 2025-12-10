@@ -187,7 +187,7 @@ function Home() {
           <h3 style={{ marginBottom: '1.5rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontSize: '1rem', letterSpacing: '1px' }}>
             Why Sangatamizh?
           </h3>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem' }}>
+          <div className="features-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem' }}>
             <div className="card-flat">
               <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>🔥</div>
               <h4 style={{ marginBottom: '0.5rem' }}>Curated Playlists</h4>
