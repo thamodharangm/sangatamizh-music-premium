@@ -41,7 +41,7 @@ function Home() {
       <main style={{ padding: '2rem 0', maxWidth: '1000px', margin: '0 auto' }}>
         
         {/* Welcome / Hero Section - Duolingo Style (Clean, Bold) */}
-        <section style={{ 
+        <section className="hero-section" style={{ 
           marginBottom: '4rem', 
           display: 'flex', 
           alignItems: 'center', 
@@ -49,7 +49,7 @@ function Home() {
           borderBottom: '2px solid var(--border-color)',
           paddingBottom: '2rem'
         }}>
-          <div>
+          <div className="hero-content">
             <h1 style={{ fontSize: '2.5rem', marginBottom: '1rem', color: 'white' }}>
               Welcome to <span style={{ color: 'var(--primary)' }}>Sangatamizh</span>
             </h1>
@@ -62,7 +62,7 @@ function Home() {
             </div>
           </div>
           {/* Optional: Hero Image or Icon here? */}
-          <div style={{ 
+          <div className="hero-image" style={{ 
              width: '150px', 
              height: '150px', 
              background: 'var(--bg-card)', 
@@ -80,7 +80,7 @@ function Home() {
 
         {/* Trending Section */}
         <section id="trending">
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
+          <div className="trending-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
             <h2>Trending Now</h2>
             <button 
               className="btn-3d btn-secondary" 

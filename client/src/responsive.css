@@ -275,3 +275,429 @@
     opacity: 0.7;
   }
 }
+
+/* 2️⃣ Small–medium phones 
+   Examples: iPhone XR / 11, iPhone 12/13/14, Pixel 7,
+             Samsung Galaxy S8+, A51/71, etc. */
+@media (min-width: 376px) and (max-width: 430px) {
+  /* Optimize Grid for 2 columns comfortably */
+  div[style*="grid-template-columns"] {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 12px !important;
+  }
+
+  /* Adjust Main Content padding */
+  .main-content {
+    padding: 1rem 0.75rem; /* Slightly reduced side padding */
+    padding-bottom: 150px;
+  }
+  
+  /* Music Player Fixes for this range 
+     NOTE: Targeting .glass-panel as used in previous mobile block, 
+     but ensure .music-player is also covered if structure changes */
+  .glass-panel, .music-player {
+    bottom: 90px !important; /* Clear the nav bar */
+    width: 94% !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    padding: 0.6rem 0.8rem !important;
+    gap: 0.5rem;
+  }
+  
+  /* Ensure Nav Items fit */
+  .nav-item {
+    padding: 6px 4px;
+    font-size: 0.7rem;
+  }
+  
+  .nav-item span:first-child {
+    font-size: 1.3rem;
+  }
+}
+
+/* 3️⃣ Strict Mobile Layout Fixes (Hero, Trending, Spacing) */
+@media (max-width: 768px) {
+  
+  /* Hero Section Restructure */
+  .hero-section {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    justify-content: flex-start !important;
+    padding-bottom: 2rem !important;
+    margin-bottom: 2rem !important;
+    position: relative;
+    border-bottom: 1px solid rgba(255,255,255,0.1) !important;
+  }
+
+  .hero-content {
+    width: 100%;
+    z-index: 2; /* Ensure text is above if overlapping */
+  }
+
+  .hero-content h1 {
+    font-size: 2rem !important; /* Smaller Title */
+    line-height: 1.2;
+    max-width: 75%; /* Limit width to avoid hitting the image */
+  }
+
+  .hero-content p {
+    font-size: 1rem !important;
+    line-height: 1.4;
+    margin-bottom: 1.5rem !important;
+    color: var(--text-muted);
+  }
+
+  /* Optimize Buttons */
+  .hero-content div {
+    width: 100%;
+     gap: 10px !important;
+  }
+  
+  .hero-content button {
+    flex: 1; /* Semantic full width buttons */
+    padding: 0 12px !important;
+    height: 42px !important;
+    font-size: 0.85rem !important;
+  }
+
+  /* Fix the Mascot Image - Position Absolute Top Right */
+  .hero-image {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 80px !important; /* Much smaller */
+    height: 80px !important;
+    font-size: 2rem !important;
+    border-width: 1px !important;
+    opacity: 0.9;
+  }
+
+  /* Trending Header Alignment */
+  .trending-header {
+    margin-bottom: 1rem !important;
+  }
+  
+  .trending-header h2 {
+    font-size: 1.4rem !important;
+  }
+  
+  .trending-header button {
+    padding: 0 12px !important;
+    height: 32px !important;
+    font-size: 0.75rem !important;
+  }
+
+  /* Hide Desktop Scroll Arrows */
+  .nav-arrow {
+    display: none !important; 
+  }
+
+  /* Improve Horizontal Scroll Experience */
+  #trending-scroll {
+    padding-right: 20px; /* Peek affordance */
+    scroll-snap-type: x mandatory;
+  }
+  
+  .song-card-wrapper {
+    scroll-snap-align: start;
+    min-width: 150px !important; /* Ensure readable width */
+  }
+}
+
+/* 4️⃣ Playlist Page Mobile Fixes */
+@media (max-width: 768px) {
+  .playlist-container {
+    padding: 1rem !important;
+  }
+
+  /* Stack Header vertically */
+  .playlist-header {
+    flex-direction: column !important;
+    align-items: center !important;
+    text-align: center !important;
+    gap: 1rem !important;
+  }
+
+  .playlist-cover {
+    width: 140px !important;
+    height: 140px !important;
+    font-size: 3rem !important;
+  }
+
+  .playlist-info h1 {
+    font-size: 2rem !important;
+    margin-bottom: 0.5rem !important;
+  }
+  
+  /* Transform Table to Cards/List */
+  .playlist-container table, 
+  .playlist-container thead, 
+  .playlist-container tbody, 
+  .playlist-container th, 
+  .playlist-container td, 
+  .playlist-container tr {
+    display: block !important;
+  }
+
+  /* Hide Table Header */
+  .playlist-container thead {
+    display: none !important;
+  }
+
+  .playlist-row {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 1rem !important;
+    border-bottom: 1px solid rgba(255,255,255,0.1) !important;
+    gap: 12px;
+  }
+
+  /* Row Item: Index Number - Hide it or make small */
+  .playlist-row td:first-child {
+    display: none !important; /* Hide Index # to save space */
+  }
+
+  /* Row Item: Title & Image */
+  .playlist-row td:nth-child(2) {
+    padding: 0 !important;
+    flex: 1; /* Take up remaining space */
+  }
+  
+  .playlist-row td:nth-child(2) > div {
+     display: flex;
+     flex-direction: column !important; /* Stack image and text? No, Image left, Text right */
+     align-items: flex-start !important;
+     gap: 4px !important;
+     position: relative;
+     padding-left: 60px !important; /* Space for absolute positioned image */
+     min-height: 50px;
+     justify-content: center;
+  }
+  
+  .playlist-row img {
+     position: absolute;
+     left: 0;
+     top: 50%;
+     transform: translateY(-50%);
+     width: 50px !important;
+     height: 50px !important;
+     border-radius: 8px !important;
+  }
+  
+  .playlist-row span { /* Title */
+     font-size: 0.95rem !important;
+     font-weight: 700 !important;
+     line-height: 1.2;
+     display: block;
+     margin-bottom: 2px;
+  }
+
+  /* We previously hid the 3rd child (Artist). Let's unhide it and position it strictly or merge it visually */
+  /* Actually, simply unhiding it as a block element below the title might work inside the flex container?
+     No, they are separate TD elements. Converting TD to block means they stack VERTICALLY.
+     Row = Flex Row.
+     TD 1 (Index) = Hidden.
+     TD 2 (Title+Img) = Flex 1.
+     TD 3 (Artist) = ...
+     TD 4 (Action) = Right.
+
+     To stack Artist UNDER Title, we'd need them in the same container.
+     Since we can't change HTML structure easily for just mobile without JS...
+     
+     Option B: Make the Row wrap? 
+     Title (100%), Artist (100%), Button (100%).
+     
+     User Screenshot shows:
+     [Image] [Title]
+             [Artist - potentially inside title or separate line]
+     [      PLAY BUTTON      ]
+     
+     Ah, the user screenshot shows the PLAY BUTTON is a big block at the bottom of the card!
+     And the text is stacked.
+  */
+
+  /* CARD STYLE ROW FOR MOBILE */
+  .playlist-row {
+     flex-direction: column !important;
+     align-items: flex-start !important;
+     background: var(--bg-card) !important;
+     margin-bottom: 1rem !important;
+     border-radius: 12px !important;
+     border: 1px solid var(--border-color) !important;
+     padding: 1rem !important;
+     gap: 1rem !important;
+  }
+
+  /* 1. Title/Image Section */
+  .playlist-row td:nth-child(2) {
+      width: 100%;
+      border-bottom: 1px solid rgba(255,255,255,0.05); /* Separator */
+      padding-bottom: 1rem !important;
+      margin-bottom: 0.5rem;
+  }
+  
+  .playlist-row td:nth-child(2) > div { /* The flex container in JS */
+      flex-direction: row !important; /* Keep image left of title */
+      padding-left: 0 !important;
+      align-items: center !important;
+      justify-content: flex-start;
+  }
+  
+  .playlist-row img {
+      position: static !important; /* Reset absolute */
+      transform: none !important;
+      width: 60px !important;
+      height: 60px !important;
+      margin-right: 12px;
+  }
+
+  /* 2. Artist Section - SHOW IT NOW */
+  .playlist-row td:nth-child(3) {
+      display: block !important;
+      width: 100%;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      margin-top: -12px; /* Pull closer to title section? Or just let it sit */
+      padding: 0 0 1rem 0 !important; /* Spacing */
+      padding-left: 72px !important; /* Align with text (60px img + 12px gap) */
+  }
+
+  /* 3. Play Button - FULL WIDTH BOTTOM */
+  .playlist-row td:last-child {
+      width: 100%;
+      text-align: center !important;
+      padding: 0 !important;
+  }
+  
+  .playlist-row td:last-child button {
+      width: 100% !important;
+      background: var(--primary) !important;
+      color: white !important;
+      font-weight: 800 !important;
+      text-transform: uppercase;
+      height: 44px !important;
+      box-shadow: none !important;
+      border-radius: 8px !important;
+  }
+}
+
+/* 5️⃣ Library Page Mobile Fixes */
+@media (max-width: 768px) {
+  /* Stack Title and Search Bar */
+  .library-title-row {
+    flex-direction: row !important; /* Keep row */
+    align-items: center !important;
+    gap: 1rem !important;
+  }
+  
+  /* Title size */
+  .library-title-row h1 {
+     font-size: 1.8rem !important;
+  }
+  
+  /* Search Input - Full Width / Flexible */
+  .library-title-row .search-input {
+      width: 100% !important;
+      max-width: none !important;
+      height: 40px !important;
+      font-size: 0.9rem !important;
+  }
+
+  /* Make Chips horizontally scrollable smoothly */
+  .category-chips {
+      width: 100%;
+      padding-bottom: 0 !important;
+      padding-right: 16px; /* End padding */
+      mask-image: linear-gradient(to right, black 90%, transparent 100%);
+      -webkit-mask-image: linear-gradient(to right, black 90%, transparent 100%);
+  }
+  
+  /* Adjust chip size slightly for touch */
+  .category-chips button {
+      padding: 0.5rem 1rem !important;
+      font-size: 0.85rem !important;
+      flex-shrink: 0;
+  }
+}
+
+/* 6️⃣ Admin Dashboard Mobile Fixes */
+@media (max-width: 768px) {
+  /* Fix Stats Grid Layout */
+  .admin-stats-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 12px !important;
+  }
+  
+  /* Make the last card span full width if odd number */
+  .admin-stat-card:last-child {
+      grid-column: span 2;
+  }
+  
+  /* Reduce Card Padding */
+  .admin-stat-card {
+    padding: 1rem !important;
+  }
+  
+  /* Reduce Huge Font Sizes */
+  .admin-stat-card h3 {
+    font-size: 2rem !important;
+  }
+  
+  .admin-stat-card p {
+    font-size: 0.7rem !important;
+  }
+
+  /* Admin Tabs scrolling */
+  .admin-tabs {
+     flex-wrap: nowrap;
+     overflow-x: auto;
+     padding-bottom: 5px;
+     justify-content: flex-start;
+  }
+  
+  .admin-tabs button {
+      flex: 0 0 auto;
+      min-width: auto;
+      padding: 0 16px !important;
+  }
+}
+  
+/* 7️⃣ Recent Activity Mobile Fixes */
+@media (max-width: 768px) {
+  .activity-item {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0.5rem !important;
+  }
+  
+  .activity-left {
+    width: 100%;
+    /* Keep image and text side-by-side */
+    display: flex !important;
+    align-items: center !important; 
+    gap: 12px !important;
+  }
+  
+  .activity-text {
+    flex: 1;
+    min-width: 0; /* Enable truncation inside flex */
+  }
+  
+  .activity-text h4 {
+    white-space: nowrap; 
+    overflow: hidden; 
+    text-overflow: ellipsis; 
+    max-width: 250px; /* Safe truncation width */
+    font-size: 0.95rem !important;
+  }
+  
+  .activity-date {
+    align-self: flex-end;
+    font-size: 0.75rem !important;
+    color: var(--text-muted);
+    opacity: 0.8;
+  }
+}
+}

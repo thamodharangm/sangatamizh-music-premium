@@ -155,16 +155,16 @@ const AdminUpload = () => {
       
       {/* Main Stats (Visible on Dashboard) */}
       {activeTab === 'dashboard' && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
-          <div className="card-flat" style={{ padding: '1.5rem', textAlign: 'center' }}>
+        <div className="admin-stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
+          <div className="card-flat admin-stat-card" style={{ padding: '1.5rem', textAlign: 'center' }}>
             <h3 style={{ fontSize: '3rem', color: 'var(--primary)', marginBottom: '0.5rem' }}>{stats.totalSongs}</h3>
             <p style={{ color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 'bold', fontSize: '0.8rem' }}>Total Songs</p>
           </div>
-          <div className="card-flat" style={{ padding: '1.5rem', textAlign: 'center' }}>
+          <div className="card-flat admin-stat-card" style={{ padding: '1.5rem', textAlign: 'center' }}>
             <h3 style={{ fontSize: '3rem', color: '#10b981', marginBottom: '0.5rem' }}>Active</h3>
             <p style={{ color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 'bold', fontSize: '0.8rem' }}>System Status</p>
           </div>
-          <div className="card-flat" style={{ padding: '1.5rem', textAlign: 'center' }}>
+          <div className="card-flat admin-stat-card" style={{ padding: '1.5rem', textAlign: 'center' }}>
             <h3 style={{ fontSize: '3rem', color: '#f59e0b', marginBottom: '0.5rem' }}>{stats.storageUsed}</h3>
             <p style={{ color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 'bold', fontSize: '0.8rem' }}>Est. Storage</p>
           </div>
@@ -190,19 +190,19 @@ const AdminUpload = () => {
         <div className="card-flat" style={{ padding: '2rem' }}>
           <h2 style={{ color: 'white', marginBottom: '1rem' }}>Recent Activity</h2>
           {dataLoading ? <p>Loading...</p> : (
-            <ul style={{ listStyle: 'none', padding: 0 }}>
+            <ul className="recent-activity-list" style={{ listStyle: 'none', padding: 0 }}>
               {songs.slice(0, 5).map(song => (
-                <li key={song.id || song._id} style={{ padding: '1rem 0', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <li key={song.id || song._id} className="activity-item" style={{ padding: '1rem 0', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div className="activity-left" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                     <div style={{ width: '40px', height: '40px', borderRadius: '4px', overflow: 'hidden' }}>
                       <img src={song.cover_url || song.coverArt || 'https://via.placeholder.com/40'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="art" />
                     </div>
-                    <div>
+                    <div className="activity-text">
                       <h4 style={{ color: 'white', margin: 0 }}>{song.title}</h4>
                       <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>{song.artist}</span>
                     </div>
                   </div>
-                  <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                  <span className="activity-date" style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                     {new Date(song.created_at).toLocaleDateString()}
                   </span>
                 </li>
