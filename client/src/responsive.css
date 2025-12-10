@@ -122,6 +122,8 @@
   }
 
   .nav-item {
+    flex: 1; /* Distribute evenly */
+    min-width: 0;
     flex-direction: column;
     padding: 8px 12px;
     margin: 0;
@@ -129,6 +131,8 @@
     gap: 4px;
     border: none !important; /* Remove active border */
     background: transparent !important; /* Remove active bg */
+    justify-content: center;
+    text-align: center;
   }
 
   /* Make icons bigger on mobile */
@@ -705,5 +709,61 @@
 @media (max-width: 768px) {
   .features-grid {
     grid-template-columns: 1fr !important; /* Stack vertically */
+  }
+}
+
+/* 9️⃣ Song Card Grid Mobile Fixes (Strict 2-Col + Square) */
+@media (max-width: 768px) {
+  /* Target the grid container (Library & Home) 
+     We use a broad selector to catch the inline-styled grids */
+  div[style*="grid-template-columns"] {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+  }
+
+  /* Compact Card Styling */
+  .song-card {
+    padding: 0.5rem !important;
+    border-radius: 12px !important;
+  }
+
+  /* Force Square Aspect Ratio for Uniformity */
+  .song-card > div:first-child { 
+     aspect-ratio: 1 / 1 !important;
+     margin-bottom: 0.5rem !important;
+  }
+
+  /* Smaller Fonts for Mobile */
+  .song-card h3 {
+     font-size: 0.8rem !important;
+     line-height: 1.2 !important;
+  }
+  
+  .song-card p {
+     font-size: 0.7rem !important;
+  }
+
+  /* Adjust Like Button Position/Size */
+  .song-card .like-btn {
+     top: 4px !important;
+     right: 4px !important;
+     width: 28px !important;
+     height: 28px !important;
+  }
+}
+
+/* 🔟 Library Grid Specific Fixes */
+@media (max-width: 768px) {
+  .library-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+    width: 100% !important;
+  }
+  
+  /* Ensure cards shrink to fit the grid cell */
+  .library-grid .song-card {
+     width: 100% !important;
+     min-width: 0 !important;
   }
 }

@@ -102,7 +102,7 @@ const Library = () => {
       {loading ? (
         <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--text-muted)' }}>Loading library...</div>
       ) : filteredSongs.length > 0 ? (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '1rem' }}>
+        <div className="library-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(135px, 1fr))', gap: '1rem' }}>
           {filteredSongs.map(song => (
             <SongCard key={song.id || song._id} song={song} onPlay={playSong} />
           ))}
