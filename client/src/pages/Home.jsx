@@ -187,21 +187,21 @@ function Home() {
           <h3 style={{ marginBottom: '1.5rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontSize: '1rem', letterSpacing: '1px' }}>
             Why Sangatamizh?
           </h3>
-          <div className="features-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem' }}>
-            <div className="card-flat">
-              <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>🔥</div>
-              <h4 style={{ marginBottom: '0.5rem' }}>Curated Playlists</h4>
-              <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Hand-picked tracks for every mood.</p>
+          <div className="features-grid">
+            <div className="feature-card">
+              <div className="feature-icon">🔥</div>
+              <h4 className="feature-title">Curated Playlists</h4>
+              <p className="feature-desc">Hand-picked tracks for every mood.</p>
             </div>
-            <div className="card-flat">
-               <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>💎</div>
-              <h4 style={{ marginBottom: '0.5rem' }}>Hi-Res Audio</h4>
-              <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Crystal clear sound quality.</p>
+            <div className="feature-card">
+               <div className="feature-icon">💎</div>
+              <h4 className="feature-title">Hi-Res Audio</h4>
+              <p className="feature-desc">Crystal clear sound quality.</p>
             </div>
-            <div className="card-flat">
-               <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>🏆</div>
-              <h4 style={{ marginBottom: '0.5rem' }}>Weekly Charts</h4>
-              <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>See what's topping the leaderboards.</p>
+            <div className="feature-card">
+               <div className="feature-icon">🏆</div>
+              <h4 className="feature-title">Weekly Charts</h4>
+              <p className="feature-desc">See what's topping the leaderboards.</p>
             </div>
           </div>
         </section>
