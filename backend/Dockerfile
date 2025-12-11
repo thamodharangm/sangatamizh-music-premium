@@ -16,6 +16,10 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 
+# Generate Prisma Client
+COPY prisma ./prisma/
+RUN npx prisma generate
+
 # Copy App Source
 COPY . .
 
