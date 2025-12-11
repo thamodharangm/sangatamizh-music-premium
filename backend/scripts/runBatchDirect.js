@@ -1,4 +1,9 @@
-const { initAutoProxyRefresh } = require('../src/utils/proxyManager');
+/* eslint-disable no-console */
+require('dotenv').config();
+
+// FORCE DIRECT CONNECTION: Bypass proxy pool logic for local batch upload
+process.env.PROXY_URL = 'DIRECT';
+
 const youtubeService = require('../src/services/youtubeService');
 const storageService = require('../src/services/storageService');
 const prisma = require('../src/config/prisma');
@@ -42,37 +47,37 @@ async function processUrl(url) {
         console.log(`\n--- Processing: ${url} ---`);
         
         // 1. Get Metadata
-        console.log('1. Fetching Metadata...');
+        console.log('1. Fetching Metadata (Direct)...');
         let metadata;
         try {
             metadata = await youtubeService.getMetadata(url);
             console.log(`   Title: ${metadata.title}`);
         } catch (e) {
-            console.error('   Failed to get metadata, using fallback.');
+            console.error('   Metadata Fetch Warning:', e.message);
             metadata = { title: 'Unknown Title', artist: 'Unknown Artist' };
         }
 
         // 2. Download
-        console.log('2. Downloading Audio...');
+        console.log('2. Downloading Audio (Direct)...');
         const videoId = extractVideoId(url);
-        if (!videoId) throw new Error('Could not extract Video ID');
+        if (!videoId) throw new Error('Invalid ID');
         
         tempFile = await youtubeService.downloadAudio(videoId);
-        if (!tempFile) throw new Error('Download failed (no file returned)');
+        if (!tempFile) throw new Error('Download failed');
+        console.log(`   Downloaded: ${tempFile}`);
 
         // 3. Upload to Storage
         console.log('3. Uploading to Supabase...');
         const isM4a = tempFile.endsWith('.m4a');
-        const ext = isM4a ? 'm4a' : 'mp3';
+        const fname = `songs/${Date.now()}_${videoId}.${isM4a ? 'm4a' : 'mp3'}`;
         const contentType = isM4a ? 'audio/x-m4a' : 'audio/mpeg';
-        const fname = `songs/${Date.now()}_${videoId}.${ext}`;
         
         const publicUrl = await storageService.uploadFile(tempFile, fname, contentType);
-        console.log(`   Uploaded: ${publicUrl}`);
+        console.log(`   URL: ${publicUrl}`);
 
         // 4. DB Record
         console.log('4. Saving to Database...');
-        const song = await prisma.song.create({
+        await prisma.song.create({
             data: {
                 title: metadata.title,
                 artist: metadata.artist || "Unknown",
@@ -81,7 +86,7 @@ async function processUrl(url) {
                 category: "Batch Upload",
             },
         });
-        console.log(`   ✅ Success! Song ID: ${song.id}`);
+        console.log(`   ✅ Done!`);
         return true;
 
     } catch (e) {
@@ -95,44 +100,13 @@ async function processUrl(url) {
 }
 
 (async () => {
-    console.log(`Starting Batch Upload for ${URLS.length} songs...`);
-    
-    // Start background refresh (DO NOT AWAIT - this allows us to start as soon as 1 proxy is found)
-    console.log('Starting background proxy refresh...');
-    initAutoProxyRefresh().catch(console.error); 
-
-    // Wait for at least 1 valid proxy
-    console.log('Waiting for the first working proxy to be found...');
-    const { getCurrentProxyUrl } = require('../src/utils/proxyManager');
-    
-    let waitingDots = 0;
-    const maxWaitDots = 30; // Wait ~60 seconds max
-    
-    while (getCurrentProxyUrl() === 'DIRECT') {
-        if (waitingDots > maxWaitDots) {
-            console.log('\n\n⚠️  Proxy fetch taking too long. Falling back to DIRECT connection (Local IP).');
-            break;
-        }
-        await new Promise(r => setTimeout(r, 2000));
-        process.stdout.write('.');
-        waitingDots++;
-        if (waitingDots % 30 === 0) console.log(''); 
-    }
-    if (getCurrentProxyUrl() !== 'DIRECT') {
-        console.log('\n\n✅ Proxy acquired! Starting downloads...\n');
-    }
-
-    let success = 0;
-    let fail = 0;
+    console.log(`Starting DIRECT Batch Upload for ${URLS.length} songs...`);
+    await youtubeService.ensureYtDlp(); 
 
     for (const url of URLS) {
-        const result = await processUrl(url);
-        if (result) success++;
-        else fail++;
+        await processUrl(url);
     }
 
-    console.log(`\n\n=== BATCH COMPLETE ===`);
-    console.log(`Success: ${success}`);
-    console.log(`Failed: ${fail}`);
+    console.log(`\n=== ALL DONE ===`);
     process.exit(0);
 })();

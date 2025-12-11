@@ -6,7 +6,8 @@ const os = require('os');
 const HttpsProxyAgent = require('https-proxy-agent');
 function getEnvProxyAgent() {
   const proxy = process.env.PROXY_URL;
-  return proxy ? new HttpsProxyAgent(proxy) : null;
+  if (!proxy || proxy === 'DIRECT') return null;
+  return new HttpsProxyAgent(proxy);
 }
 const fetch = require('node-fetch');
 const util = require('util');
