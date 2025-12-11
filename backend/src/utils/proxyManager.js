@@ -160,7 +160,10 @@ function rotateProxy() {
  * Get current proxy string
  */
 function getCurrentProxyUrl() {
-  if (proxyPool.length === 0) return 'DIRECT';
+  if (proxyPool.length === 0) {
+    const env = process.env.PROXY_URL;
+    return env || 'DIRECT';
+  }
   return proxyPool[currentIndex];
 }
 

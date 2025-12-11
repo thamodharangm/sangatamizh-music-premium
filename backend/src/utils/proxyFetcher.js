@@ -5,8 +5,9 @@ const { HttpsProxyAgent } = require('https-proxy-agent');
 
 const CONFIG = {
   BATCH_SIZE: 150, // High concurrency for speed
-  TEST_TIMEOUT: 10000, 
-  TEST_URL: 'https://www.youtube.com/', 
+  TEST_TIMEOUT: 15000, // 15 seconds timeout for proxy test
+  TEST_URL: 'https://www.google.com', // Use Google for quick reachable test
+
   MAX_PROXIES: 120, 
   SOURCES: {
     PROXYSCRAPE_HTTP: 'https://api.proxyscrape.com/v2/?request=getproxies&protocol=http&timeout=2000&country=all&simplified=true',

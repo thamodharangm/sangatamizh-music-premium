@@ -2,6 +2,12 @@ const fs = require('fs');
 const { getProxyAgent, rotateProxy, getCurrentProxyUrl } = require('../utils/proxyManager');
 const path = require('path');
 const os = require('os');
+// ---- PROXY SUPPORT -------------------------------------------------
+const HttpsProxyAgent = require('https-proxy-agent');
+function getEnvProxyAgent() {
+  const proxy = process.env.PROXY_URL;
+  return proxy ? new HttpsProxyAgent(proxy) : null;
+}
 const fetch = require('node-fetch');
 const util = require('util');
 const exec = util.promisify(require('child_process').exec);
@@ -156,17 +162,25 @@ async function downloadAudio(videoId) {
         try {
             const cookiePath = getCookiePath();
             const m4aFile = tempFile.replace('.mp3', '.m4a');
-            const proxyUrl = getCurrentProxyUrl();
-            
+            const envProxy = process.env.PROXY_URL;
+            // Always use an explicit proxy (env var or hard‑coded fallback)
+            const proxyUrl = envProxy || 'http://103.151.246.14:10001';
+
             console.log(`[Download] Attempt ${attempts + 1}: Using Proxy ${proxyUrl}`);
 
-            // Command: Download best audio as m4a directly
-            let cmd = `${ytDlpBinaryPath} -f "bestaudio[ext=m4a]" -o "${m4aFile}" "https://www.youtube.com/watch?v=${videoId}" --force-ipv4 --cookies "${cookiePath}"`;
-            
-            // Add proxy argument if not DIRECT
-            if (proxyUrl && proxyUrl !== 'DIRECT') {
-                cmd += ` --proxy "${proxyUrl}"`;
-            }
+            // Build base command
+            // Build base command
+let cmd = `${ytDlpBinaryPath} -f "bestaudio[ext=m4a]" -o "${m4aFile}" "https://www.youtube.com/watch?v=${videoId}" --force-ipv4 --js-runtimes node`;
+
+// Add cookies flag only if a cookie file actually exists
+if (fs.existsSync(cookiePath)) {
+    cmd += ` --cookies "${cookiePath}"`;
+}
+
+// Add proxy argument – we always have a concrete proxy now
+cmd += ` --proxy "${proxyUrl}"`;
+
+await exec(cmd);
             
             await exec(cmd);
             
