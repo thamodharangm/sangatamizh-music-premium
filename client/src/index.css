@@ -181,5 +181,117 @@ h2 { font-size: 2rem; }
   border: 2px solid var(--primary);
 }
 
-.no-scrollbar::-webkit-scrollbar { display: none; }
-.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+/* Sidebar Styling */
+.sidebar {
+  width: var(--sidebar-width);
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  background-color: var(--bg-main);
+  border-right: 2px solid var(--border-color);
+  padding: 1.5rem 1rem;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0; /* Prevent shrinking */
+  z-index: 50;
+}
+
+.sidebar-header {
+  margin-bottom: 2rem;
+  padding: 0 0.5rem;
+}
+.brand-title {
+  font-size: 1.5rem; /* Better fit */
+  color: var(--primary);
+  line-height: 1.2;
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex: 1; /* Pushes footer down */
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  padding-top: 1rem;
+  border-top: 2px solid var(--border-color);
+}
+
+.user-info {
+  text-align: center;
+}
+.user-stats {
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 1rem;
+  font-weight: bold;
+  font-size: 0.9rem;
+}
+.stat-item.gems { color: #38bdf8; } /* Light Blue */
+.stat-item.streak { color: #fbbf24; } /* Amber */
+
+.user-login-msg {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 1rem;
+}
+
+.mobile-logout, .mobile-login { display: none; } /* Default hidden on desktop */
+
+
+/* Responsive / Mobile Layout */
+@media (max-width: 768px) {
+  .app-shell {
+    flex-direction: column;
+  }
+  
+  .sidebar {
+    width: 100%;
+    height: auto;
+    position: relative;
+    border-right: none;
+    border-bottom: 2px solid var(--border-color);
+    padding: 1rem;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .sidebar-header {
+    margin-bottom: 0;
+  }
+  .brand-title {
+    font-size: 1.2rem;
+  }
+
+  /* Transform Nav into a horizontal scroll or dropdown? 
+     For simplicity, let's keep it minimal or hide text on mobile 
+  */
+  .sidebar-nav {
+    flex-direction: row;
+    flex: 0;
+    gap: 1rem;
+  }
+  .nav-text {
+    display: none; /* Icon only on mobile header to save space */
+  }
+  .nav-item {
+    margin: 0;
+    padding: 8px;
+    justify-content: center;
+  }
+
+  .sidebar-footer {
+    display: none; /* Hide full footer profile on mobile header, use icon instead */
+  }
+
+  /* Add Mobile Profile/Login Icon logic if needed, or rely on nav items */
+  .mobile-logout, .mobile-login { display: flex; }
+
+  .main-content {
+    padding: 1rem;
+    padding-bottom: 100px; /* Space for music player */
+  }
+}
