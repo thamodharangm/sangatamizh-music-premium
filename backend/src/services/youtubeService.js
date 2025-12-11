@@ -160,14 +160,23 @@ const { runYtDlp } = require('../utils/runYtDlp');
     let attempts = 0;
     const maxRetries = 3;
 
+    // Flag to track if we should try the specific PROXY_URL env var
+    let useEnvProxy = true;
+
     while (attempts <= maxRetries) {
         try {
             const cookiePath = getCookiePath();
             const m4aFile = tempFile.replace('.mp3', '.m4a');
            
-            // Proxy selection
+            // Proxy selection: Use env var first, but if it fails, switch to pool
             const envProxy = process.env.PROXY_URL;
-            const proxyUrl = envProxy || getCurrentProxyUrl();
+            let proxyUrl;
+            
+            if (useEnvProxy && envProxy) {
+                proxyUrl = envProxy;
+            } else {
+                proxyUrl = getCurrentProxyUrl();
+            }
 
             console.log(`[Download] Attempt ${attempts + 1}: Using Proxy ${proxyUrl || 'DIRECT'}`);
 
@@ -206,6 +215,13 @@ const { runYtDlp } = require('../utils/runYtDlp');
             }
         } catch(e) {
             console.error(`[Download] yt-dlp failed (Attempt ${attempts + 1}):`, e.message);
+            
+            // If we were using the hardcoded env proxy, disable it for next retry so we can rotate
+            if (useEnvProxy && process.env.PROXY_URL) {
+                console.log('[Download] PROXY_URL failed, switching to auto-rotating pool...');
+                useEnvProxy = false;
+            }
+
             // If failed and using proxy, rotate
             const currentProxy = getCurrentProxyUrl();
             if (currentProxy && currentProxy !== 'DIRECT') {
