@@ -5,8 +5,8 @@ const { HttpsProxyAgent } = require('https-proxy-agent');
 
 const CONFIG = {
   BATCH_SIZE: 150, // High concurrency for speed
-  TEST_TIMEOUT: 3500, // 3.5 seconds max/proxy
-  TEST_URL: 'https://www.youtube.com', 
+  TEST_TIMEOUT: 10000, 
+  TEST_URL: 'https://www.youtube.com/', 
   MAX_PROXIES: 120, 
   SOURCES: {
     PROXYSCRAPE_HTTP: 'https://api.proxyscrape.com/v2/?request=getproxies&protocol=http&timeout=2000&country=all&simplified=true',
@@ -43,7 +43,7 @@ async function fetchRawProxies() {
 
   const fetchSource = async (url, name) => {
     try {
-      const { data } = await axios.get(url, { timeout: 5000 });
+      const { data } = await axios.get(url, { timeout: 10000 });
       if (typeof data === 'string') {
         data.split('\n').forEach(line => {
           if (line.trim()) allProxies.add(normalizeProxy(line));
