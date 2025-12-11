@@ -1,27 +1,26 @@
-FROM node:20-slim
+# Use Node.js Base Image
+FROM node:18-slim
 
-# Install Python3 (Required for yt-dlp) and ffmpeg
-RUN apt-get update && \
-    apt-get install -y python3 python3-pip ffmpeg curl && \
-    rm -rf /var/lib/apt/lists/*
+# Install system dependencies: Python3, FFmpeg, and build tools for yt-dlp
+RUN apt-get update && apt-get install -y \
+    python3 \
+    python3-pip \
+    ffmpeg \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
 
-# Create app directory
-WORKDIR /usr/src/app
+# Set Working Directory
+WORKDIR /app
 
-# Copy package files
+# Install App Dependencies
 COPY package*.json ./
-
-# Install dependencies
 RUN npm install
 
-# Copy source
+# Copy App Source
 COPY . .
 
-# Generate Prisma Client
-RUN npx prisma generate
+# Expose Port (Render usually defaults to 10000)
+EXPOSE 10000
 
-# Expose port
-EXPOSE 3002
-
-# Start command
-CMD [ "node", "index.js" ]
+# Start Command
+CMD [ "npm", "start" ]
