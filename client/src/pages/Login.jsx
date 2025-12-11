@@ -99,23 +99,24 @@ const Login = () => {
   return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh' }}>
       <div className="card-flat" style={{ width: '100%', maxWidth: '420px', padding: '2.5rem' }}>
-        <h2 style={{ textAlign: 'center', marginBottom: '0.5rem', fontSize: '2rem', color: 'white' }}>
+        <h2 style={{ textAlign: 'center', marginBottom: '0.25rem', fontSize: '1.75rem', color: 'white' }}>
           {showForgot ? 'Reset Password' : (isLogin ? 'Welcome Back' : 'Create Account')}
         </h2>
-        <p style={{ textAlign: 'center', marginBottom: '2rem', color: 'var(--text-muted)' }}>
-          {showForgot ? 'Enter your email to receive reset instructions' : (isLogin ? 'Login to continue your musical journey' : 'Join us and start streaming')}
+        <p style={{ textAlign: 'center', marginBottom: '1.5rem', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+          {showForgot ? 'Enter your email' : (isLogin ? 'Login to continue listening' : 'Start your musical journey')}
         </p>
         
-        {error && <div style={{ background: 'rgba(239, 68, 68, 0.2)', border: '2px solid rgba(239, 68, 68, 0.5)', color: '#fca5a5', padding: '0.75rem', borderRadius: '12px', marginBottom: '1rem', fontWeight: '600' }}>{error}</div>}
-        {message && <div style={{ background: 'rgba(34, 197, 94, 0.2)', border: '2px solid rgba(34, 197, 94, 0.5)', color: '#86efac', padding: '0.75rem', borderRadius: '12px', marginBottom: '1rem', fontWeight: '600' }}>{message}</div>}
+        {error && <div style={{ background: 'rgba(239, 68, 68, 0.2)', border: '1px solid rgba(239, 68, 68, 0.5)', color: '#fca5a5', padding: '0.5rem', borderRadius: '8px', marginBottom: '1rem', fontWeight: '600', fontSize: '0.9rem', textAlign: 'center' }}>{error}</div>}
+        {message && <div style={{ background: 'rgba(34, 197, 94, 0.2)', border: '1px solid rgba(34, 197, 94, 0.5)', color: '#86efac', padding: '0.5rem', borderRadius: '8px', marginBottom: '1rem', fontWeight: '600', fontSize: '0.9rem', textAlign: 'center' }}>{message}</div>}
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
           <input 
             type="email" 
-            placeholder="Email Address" 
+            placeholder="Email" 
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="input-flat"
+            style={{ fontSize: '0.9rem', height: '44px' }}
             required
           />
           
@@ -126,6 +127,7 @@ const Login = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="input-flat"
+              style={{ fontSize: '0.9rem', height: '44px' }}
               required
             />
           )}
@@ -137,6 +139,7 @@ const Login = () => {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               className="input-flat"
+              style={{ fontSize: '0.9rem', height: '44px' }}
               required
             />
           )}
@@ -146,24 +149,24 @@ const Login = () => {
               <button 
                 type="button" 
                 onClick={() => { setShowForgot(true); clearErrors(); }}
-                style={{ background: 'none', border: 'none', color: 'var(--primary)', fontWeight: '600', fontSize: '0.9rem', cursor: 'pointer' }}
+                style={{ background: 'none', border: 'none', color: 'var(--primary)', fontWeight: '600', fontSize: '0.8rem', cursor: 'pointer' }}
               >
-                Forgot Password?
+                Forgot?
               </button>
             </div>
           )}
 
-          <button className="btn-3d btn-primary" style={{ width: '100%', marginTop: '0.5rem' }} disabled={isLoading}>
-            {isLoading ? 'Processing...' : (showForgot ? 'Send Reset Link' : (isLogin ? 'Sign In' : 'Sign Up'))}
+          <button className="btn-3d btn-primary" style={{ width: '100%', marginTop: '0.5rem', height: '44px', fontSize: '0.95rem' }} disabled={isLoading}>
+            {isLoading ? '...' : (showForgot ? 'Send Link' : (isLogin ? 'Log In' : 'Sign Up'))}
           </button>
         </form>
 
         {!showForgot && (
           <>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', margin: '1.5rem 0' }}>
-              <div style={{ flex: 1, height: '2px', background: 'var(--border-color)' }}></div>
-              <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: '700' }}>OR</span>
-              <div style={{ flex: 1, height: '2px', background: 'var(--border-color)' }}></div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', margin: '1.25rem 0' }}>
+              <div style={{ flex: 1, height: '1px', background: 'var(--border-color)' }}></div>
+              <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: '700' }}>OR</span>
+              <div style={{ flex: 1, height: '1px', background: 'var(--border-color)' }}></div>
             </div>
 
             <button className="btn-3d btn-secondary" onClick={handleGoogleSignIn} style={{ width: '100%', gap: '10px' }}>

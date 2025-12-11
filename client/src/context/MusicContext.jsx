@@ -131,25 +131,15 @@ export const MusicProvider = ({ children }) => {
   // playSong now accepts an entire list (from Home/Library)
   const playSong = (song, songList = []) => {
     // --- 1-Song Limit Logic ---
-    // If not logged in...
+    // --- Strict Auth Check ---
+    // If not logged in, BLOCK PLAYBACK immediately.
     if (!user) {
-        // Initialize counter if missing
-        if (!localStorage.getItem('guest_play_count')) {
-            localStorage.setItem('guest_play_count', '0');
-        }
-
-        const guestPlays = parseInt(localStorage.getItem('guest_play_count') || '0');
-        
-        // If they have already played 1 song... BLOCK THEM
-        if (guestPlays >= 1) {
-            alert("🎶 Free Preview Ended \n\nPlease Login or Sign Up to continue listening to unlimited music!");
-            window.location.href = '/login';
-            return;
-        }
-        
-        // Allowed: Increment count
-        localStorage.setItem('guest_play_count', (guestPlays + 1).toString());
+        // Option: Show a nice modal/alert before redirect?
+        // For now, consistent with request: force login immediately.
+        window.location.href = '/login';
+        return;
     }
+    // --------------------------
     // --------------------------
 
     let newQueue = songList.length > 0 ? songList : [song];

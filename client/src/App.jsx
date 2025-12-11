@@ -6,6 +6,7 @@ import Login from './pages/Login';
 import TestDB from './pages/TestDB';
 import Library from './pages/Library';
 import AdminUpload from './pages/AdminUpload';
+import AdminAnalytics from './pages/AdminAnalytics';
 import Sidebar from './components/Sidebar';
 import MusicPlayer from './components/MusicPlayer';
 import './App.css';
@@ -39,6 +40,11 @@ function App() {
                 
                 {/* Admin Routes */}
                 <Route path="/admin" element={
+                  <PrivateRoute adminOnly={true}>
+                    <AdminUpload />
+                  </PrivateRoute>
+                } />
+                <Route path="/admin/upload" element={
                   <PrivateRoute adminOnly={true}>
                     <AdminUpload />
                   </PrivateRoute>

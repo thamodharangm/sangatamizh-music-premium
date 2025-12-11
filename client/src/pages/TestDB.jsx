@@ -144,13 +144,30 @@ const TestDB = () => {
         setStatus('Test Complete');
     };
 
+    const makeMeAdmin = async () => {
+        if (!user) return log("❌ Not logged in!");
+        try {
+            await setDoc(doc(firestore, 'users', user.uid), { role: 'admin' }, { merge: true });
+            log("✅ User promoted to ADMIN! Refresh page to see changes.");
+        } catch (e) {
+            log(`❌ Failed: ${e.message}`);
+        }
+    };
+
     return (
         <div style={{ padding: '2rem', color: 'white', maxWidth: '800px', margin: '0 auto' }}>
             <h1>🔥 Database Connection Test</h1>
             <p>Current Status: {status}</p>
-            <button onClick={runTest} className="btn-3d btn-primary" style={{ marginBottom: '1rem' }}>
-                Run Diagnostics
-            </button>
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '1rem' }}>
+                <button onClick={runTest} className="btn-3d btn-primary">
+                    Run Diagnostics
+                </button>
+                {user && (
+                    <button onClick={makeMeAdmin} className="btn-3d btn-secondary" style={{ background: '#f59e0b', borderColor: '#d97706' }}>
+                        Make Me Admin
+                    </button>
+                )}
+            </div>
             
             <div style={{ background: '#1e293b', padding: '1rem', borderRadius: '8px', minHeight: '300px', fontFamily: 'monospace', fontSize: '0.9rem' }}>
                 <h3 style={{ borderBottom: '1px solid #475569', paddingBottom: '0.5rem', marginBottom: '0.5rem' }}>System Logs:</h3>

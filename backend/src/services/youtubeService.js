@@ -13,6 +13,7 @@ const fetch = require('node-fetch');
 const util = require('util');
 const exec = util.promisify(require('child_process').exec);
 const { YT_API_KEY, YOUTUBE_COOKIES } = require('../config/env');
+const { runYtDlp } = require('../utils/runYtDlp');
 
 let ytDlpBinaryPath = process.platform === 'win32' 
     ? path.join(__dirname, '../../yt-dlp.exe') 
@@ -118,7 +119,36 @@ async function downloadAudio(videoId) {
     console.log(`Downloading ${videoId}...`);
     const tempFile = path.join(os.tmpdir(), `song_${Date.now()}.mp3`);
     
-    // Try Invidious Mirrors
+    // 1. Try @distube/ytdl-core (Node Native - Often fastest)
+    try {
+        console.log('[Download] Trying @distube/ytdl-core...');
+        const ytdl = require('@distube/ytdl-core');
+        const stream = ytdl(`https://www.youtube.com/watch?v=${videoId}`, {
+            quality: 'highestaudio',
+            filter: 'audioonly'
+        });
+        
+        await new Promise((resolve, reject) => {
+            const writer = fs.createWriteStream(tempFile);
+            stream.pipe(writer);
+            writer.on('finish', resolve);
+            writer.on('error', reject);
+            stream.on('error', reject);
+        });
+        
+        if (fs.existsSync(tempFile)) {
+             const stats = fs.statSync(tempFile);
+             if (stats.size > 50000) { // > 50KB
+                 console.log(`[Download] ✅ SUCCESS via ytdl-core - Size: ${stats.size}`);
+                 return tempFile;
+             }
+        }
+    } catch (e) {
+        console.log('[Download] ytdl-core failed:', e.message);
+        if (fs.existsSync(tempFile)) fs.unlinkSync(tempFile);
+    }
+
+    // 2. Try Invidious Mirrors
     const mirrors = ["https://inv.tux.pizza", "https://vid.uff.io", "https://invidious.jing.rocks"];
     
     for (const mirror of mirrors) {
@@ -150,11 +180,7 @@ async function downloadAudio(videoId) {
         }
     }
 
-
-
-const { runYtDlp } = require('../utils/runYtDlp');
-// ... start of function ...
-    // Fallback: Try yt-dlp (Binary + Cookies + Proxy Rotation)
+    // 3. Fallback: Try yt-dlp (Binary + Cookies + Proxy Rotation)
     console.log('[Download] All mirrors failed. Trying yt-dlp (Raw M4A) with Proxy Rotation...');
     
     // Retry loop with proxies
@@ -194,7 +220,7 @@ const { runYtDlp } = require('../utils/runYtDlp');
                 '-o', m4aFile,
                 `https://www.youtube.com/watch?v=${videoId}`,
                 '--force-ipv4',
-                '--js-runtimes', 'node'
+                // '--js-runtimes', 'node' // Removed as it might cause errors
             ];
 
             // Add cookies if they exist

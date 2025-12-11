@@ -84,6 +84,8 @@ exports.uploadFromYoutube = async (req, res) => {
 };
 
 exports.uploadFile = async (req, res) => {
+    console.log("Upload File Body:", req.body);
+    console.log("Upload File Files:", req.files ? Object.keys(req.files) : "None");
     try {
         // Validation: Check if audio file exists
         if (!req.files || !req.files.audio || !req.files.audio[0]) {
@@ -91,7 +93,13 @@ exports.uploadFile = async (req, res) => {
         }
         
         const audioFile = req.files.audio[0];
-        const { title, artist, category, coverUrl } = req.body;
+        let { title, artist, category, coverUrl } = req.body;
+        
+        // Defaults if body parsing fails or fields missing
+        title = title || audioFile.originalname.replace(/\.[^/.]+$/, "") || "Untitled Song";
+        artist = artist || "Unknown Artist";
+        category = category || "General";
+        
         let finalCoverUrl = coverUrl || "https://via.placeholder.com/150";
 
         // Upload Audio
