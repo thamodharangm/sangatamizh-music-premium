@@ -151,6 +151,8 @@ async function downloadAudio(videoId) {
 
 
 
+const { runYtDlp } = require('../utils/runYtDlp');
+// ... start of function ...
     // Fallback: Try yt-dlp (Binary + Cookies + Proxy Rotation)
     console.log('[Download] All mirrors failed. Trying yt-dlp (Raw M4A) with Proxy Rotation...');
     
@@ -162,28 +164,36 @@ async function downloadAudio(videoId) {
         try {
             const cookiePath = getCookiePath();
             const m4aFile = tempFile.replace('.mp3', '.m4a');
-           // Proxy selection
-const envProxy = process.env.PROXY_URL;
-// Prefer env proxy, otherwise use the rotating pool
-const proxyUrl = envProxy || getCurrentProxyUrl();
+           
+            // Proxy selection
+            const envProxy = process.env.PROXY_URL;
+            const proxyUrl = envProxy || getCurrentProxyUrl();
 
-console.log(`[Download] Attempt ${attempts + 1}: Using Proxy ${proxyUrl || 'DIRECT'}`);
+            console.log(`[Download] Attempt ${attempts + 1}: Using Proxy ${proxyUrl || 'DIRECT'}`);
 
-// Build base command
-let cmd = `${ytDlpBinaryPath} -f "bestaudio[ext=m4a]" -o "${m4aFile}" "https://www.youtube.com/watch?v=${videoId}" --force-ipv4 --js-runtimes node`;
+            // Build args array for runYtDlp
+            const args = [
+                ytDlpBinaryPath,
+                '-f', 'bestaudio[ext=m4a]',
+                '-o', m4aFile,
+                `https://www.youtube.com/watch?v=${videoId}`,
+                '--force-ipv4',
+                '--js-runtimes', 'node'
+            ];
 
-// Add cookies if they exist
-if (fs.existsSync(cookiePath)) {
-    cmd += ` --cookies "${cookiePath}"`;
-}
+            // Add cookies if they exist
+            if (fs.existsSync(cookiePath)) {
+                args.push('--cookies', cookiePath);
+            }
 
-// Add proxy flag only when we have a real proxy
-if (proxyUrl && proxyUrl !== 'DIRECT') {
-    cmd += ` --proxy "${proxyUrl}"`;
-}
+            // Add proxy flag only when we have a real proxy
+            if (proxyUrl && proxyUrl !== 'DIRECT') {
+                args.push('--proxy', proxyUrl);
+            }
 
-// Execute once
-await exec(cmd);            
+            // Execute using wrapper
+            await runYtDlp(args, { timeout: 60000 });
+            
             if (fs.existsSync(m4aFile)) {
                  const stats = fs.statSync(m4aFile);
                  if (stats.size > 0) {

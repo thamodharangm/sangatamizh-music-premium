@@ -117,7 +117,16 @@ const AdminUpload = () => {
 
     } catch (err) {
       console.error("Upload Error:", err);
-      setError('Upload Failed: ' + (err.response?.data?.error || err.message));
+      // Improve error message extraction
+      let errorMsg = 'Upload Failed';
+      if (err.response && err.response.data) {
+        errorMsg += ': ' + (err.response.data.message || JSON.stringify(err.response.data));
+      } else if (err.message) {
+        errorMsg += ': ' + err.message;
+      } else {
+        errorMsg = 'Upload Failed: ' + String(err);
+      }
+      setError(errorMsg);
     } finally {
       setLoading(false);
     }

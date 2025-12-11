@@ -67,10 +67,19 @@ exports.uploadFromYoutube = async (req, res) => {
         res.json(song);
 
     } catch (e) {
-        console.error(e);
-        res.status(500).json({ error: e.message });
+        console.error("Youtube Upload Logic Failed:", e);
+        // Clean up temp file if it exists and error occurred (handled in finally for success case too, but explicit here for clarity if needed or remove duplicate)
+        
+        // Return 500 with a structured error object
+        res.status(500).json({ 
+            error: "YouTube Process Failed", 
+            message: e.message || "Unknown error occurred",
+            details: process.env.NODE_ENV === 'development' ? e.stack : undefined
+        });
     } finally {
-        if (tempFile && fs.existsSync(tempFile)) fs.unlinkSync(tempFile);
+        if (tempFile && fs.existsSync(tempFile)) {
+             try { fs.unlinkSync(tempFile); } catch(err) { console.error("Cleanup failed:", err); }
+        }
     }
 };
 
