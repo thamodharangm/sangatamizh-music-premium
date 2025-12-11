@@ -162,28 +162,28 @@ async function downloadAudio(videoId) {
         try {
             const cookiePath = getCookiePath();
             const m4aFile = tempFile.replace('.mp3', '.m4a');
-            const envProxy = process.env.PROXY_URL;
-            // Always use an explicit proxy (env var or hard‑coded fallback)
-            const proxyUrl = envProxy || 'http://103.151.246.14:10001';
+           // Proxy selection
+const envProxy = process.env.PROXY_URL;
+// Prefer env proxy, otherwise use the rotating pool
+const proxyUrl = envProxy || getCurrentProxyUrl();
 
-            console.log(`[Download] Attempt ${attempts + 1}: Using Proxy ${proxyUrl}`);
+console.log(`[Download] Attempt ${attempts + 1}: Using Proxy ${proxyUrl || 'DIRECT'}`);
 
-            // Build base command
-            // Build base command
+// Build base command
 let cmd = `${ytDlpBinaryPath} -f "bestaudio[ext=m4a]" -o "${m4aFile}" "https://www.youtube.com/watch?v=${videoId}" --force-ipv4 --js-runtimes node`;
 
-// Add cookies flag only if a cookie file actually exists
+// Add cookies if they exist
 if (fs.existsSync(cookiePath)) {
     cmd += ` --cookies "${cookiePath}"`;
 }
 
-// Add proxy argument – we always have a concrete proxy now
-cmd += ` --proxy "${proxyUrl}"`;
+// Add proxy flag only when we have a real proxy
+if (proxyUrl && proxyUrl !== 'DIRECT') {
+    cmd += ` --proxy "${proxyUrl}"`;
+}
 
-await exec(cmd);
-            
-            await exec(cmd);
-            
+// Execute once
+await exec(cmd);            
             if (fs.existsSync(m4aFile)) {
                  const stats = fs.statSync(m4aFile);
                  if (stats.size > 0) {
