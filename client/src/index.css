@@ -181,36 +181,44 @@ h2 { font-size: 2rem; }
   border: 2px solid var(--primary);
 }
 
-/* Sidebar Styling */
+/* --- SIDEBAR & NAVIGATION STRUCTURE --- */
+
+/* Desktop: Sticky Left Sidebar */
 .sidebar {
   width: var(--sidebar-width);
   height: 100vh;
   position: sticky;
   top: 0;
-  background-color: var(--bg-main);
+  left: 0;
+  background-color: #151f25; /* Distinct dark bg */
   border-right: 2px solid var(--border-color);
   padding: 1.5rem 1rem;
   display: flex;
   flex-direction: column;
-  flex-shrink: 0; /* Prevent shrinking */
-  z-index: 50;
+  flex-shrink: 0;
+  z-index: 100;
 }
 
 .sidebar-header {
   margin-bottom: 2rem;
   padding: 0 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
+
 .brand-title {
-  font-size: 1.5rem; /* Better fit */
+  font-size: 1.8rem;
   color: var(--primary);
-  line-height: 1.2;
+  line-height: 1.1;
+  margin: 0;
 }
 
 .sidebar-nav {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  flex: 1; /* Pushes footer down */
+  gap: 0.75rem;
+  flex: 1;
 }
 
 .sidebar-footer {
@@ -219,80 +227,87 @@ h2 { font-size: 2rem; }
   border-top: 2px solid var(--border-color);
 }
 
-.user-info {
-  text-align: center;
-}
+/* User Stats in Sidebar */
 .user-stats {
   display: flex;
   justify-content: space-around;
   margin-bottom: 1rem;
-  font-weight: bold;
+  padding: 0.5rem;
+  background: rgba(255,255,255,0.05);
+  border-radius: var(--radius-md);
+  font-weight: 700;
   font-size: 0.9rem;
 }
-.stat-item.gems { color: #38bdf8; } /* Light Blue */
-.stat-item.streak { color: #fbbf24; } /* Amber */
-
-.user-login-msg {
-  font-size: 0.85rem;
-  color: var(--text-muted);
-  margin-bottom: 1rem;
-}
-
-.mobile-logout, .mobile-login { display: none; } /* Default hidden on desktop */
+.stat-item { display: flex; align-items: center; gap: 6px; }
 
 
-/* Responsive / Mobile Layout */
+/* --- MOBILE LAYOUT (Max-width 768px) --- */
 @media (max-width: 768px) {
   .app-shell {
     flex-direction: column;
   }
   
+  /* Sidebar becomes Bottom Navigation Bar */
   .sidebar {
     width: 100%;
-    height: auto;
-    position: relative;
-    border-right: none;
-    border-bottom: 2px solid var(--border-color);
-    padding: 1rem;
+    height: 70px; /* Standard tab bar height */
+    position: fixed;
+    bottom: 0;
+    top: auto; /* Reset top */
+    left: 0;
     flex-direction: row;
     align-items: center;
-    justify-content: space-between;
+    justify-content: space-around; /* Distribute icons evenly */
+    padding: 0 1rem;
+    border-right: none;
+    border-top: 2px solid var(--border-color); /* Separator on top */
+    background-color: var(--bg-main); /* Ensure opacity */
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.4); /* Shadow going up */
   }
 
-  .sidebar-header {
-    margin-bottom: 0;
-  }
-  .brand-title {
-    font-size: 1.2rem;
+  /* Hide Desktop elements on mobile */
+  .sidebar-header, 
+  .brand-title, 
+  .sidebar-footer, 
+  .nav-text {
+    display: none; 
   }
 
-  /* Transform Nav into a horizontal scroll or dropdown? 
-     For simplicity, let's keep it minimal or hide text on mobile 
-  */
   .sidebar-nav {
     flex-direction: row;
-    flex: 0;
-    gap: 1rem;
+    width: 100%;
+    justify-content: space-around; /* Spread icons */
+    align-items: center;
+    gap: 0;
   }
-  .nav-text {
-    display: none; /* Icon only on mobile header to save space */
-  }
+
   .nav-item {
-    margin: 0;
+    flex-direction: column;
     padding: 8px;
-    justify-content: center;
+    margin: 0;
+    border: none;
+    background: transparent !important; /* No background boxes on mobile nav */
+    gap: 4px;
+  }
+  
+  .nav-item.active {
+    color: var(--primary);
+    background: transparent;
+    border: none;
+  }
+  
+  /* Bigger Icons for Mobile Touch Targets */
+  .nav-item span:first-child {
+    font-size: 1.5rem;
   }
 
-  .sidebar-footer {
-    display: none; /* Hide full footer profile on mobile header, use icon instead */
-  }
-
-  /* Add Mobile Profile/Login Icon logic if needed, or rely on nav items */
+  /* Show logout/login icons if needed */
   .mobile-logout, .mobile-login { display: flex; }
 
+  /* Adjust Main Content to not be hidden behind Bottom Bar */
   .main-content {
     padding: 1rem;
-    padding-top: 70px; /* 60px header + 10px buffer */
-    padding-bottom: 100px; /* Space for music player */
+    padding-bottom: 150px; /* 70px Nav + 70px MusicPlayer buffer */
+    width: 100%;
   }
 }
