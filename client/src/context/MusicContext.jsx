@@ -64,25 +64,38 @@ export const MusicProvider = ({ children }) => {
 
   useEffect(() => {
     const audio = audioRef.current;
+    audio.preload = 'auto'; // Optimize buffering
 
     const handlePlay = () => setIsPlaying(true);
     const handlePause = () => setIsPlaying(false);
     
     // Auto-play next song
     const handleEnded = () => {
-      setIsPlaying(false);
+      // Don't force pause state here, let the transition handle it
+      // setIsPlaying(false); 
       if (updateStats) updateStats('song_played');
       nextSong();
     };
 
     const handleTimeUpdate = () => setCurrentTime(audio.currentTime);
-    const handleLoadedMetadata = () => setDuration(audio.duration);
+    const handleDurationChange = () => {
+        if(audio.duration && Number.isFinite(audio.duration)) {
+            setDuration(audio.duration);
+        }
+    };
+    // Initial metadata load
+    const handleLoadedMetadata = () => {
+         if(audio.duration && Number.isFinite(audio.duration)) {
+             setDuration(audio.duration);
+         }
+    };
 
     audio.addEventListener('play', handlePlay);
     audio.addEventListener('pause', handlePause);
     audio.addEventListener('ended', handleEnded);
     audio.addEventListener('timeupdate', handleTimeUpdate);
     audio.addEventListener('loadedmetadata', handleLoadedMetadata);
+    audio.addEventListener('durationchange', handleDurationChange);
 
     return () => {
       audio.removeEventListener('play', handlePlay);
@@ -90,6 +103,7 @@ export const MusicProvider = ({ children }) => {
       audio.removeEventListener('ended', handleEnded);
       audio.removeEventListener('timeupdate', handleTimeUpdate);
       audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
+      audio.removeEventListener('durationchange', handleDurationChange);
     };
   }, [queue, currentIndex]); // Re-bind if playlist changes to ensure fresh state access? Actually handleEnded relies on closing over 'queue' if defined inside. 
   // BETTER: Move nextSong logic into handleEnded or use functional state updates.
