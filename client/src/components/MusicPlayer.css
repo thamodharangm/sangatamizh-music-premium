@@ -246,19 +246,31 @@
   /* Progress Bar: Absolute Top */
   .mp-progress-container {
     position: absolute;
-    top: -6px; /* Moved up slightly so the knob is visible above the card */
-    left: 12px; /* Slight inset matching padding */
+    top: -6px; /* Position visual track */
+    left: 12px; 
     width: calc(100% - 24px);
     max-width: none;
-    height: 4px;
+    height: 4px; /* Visual Height */
     background: rgba(255, 255, 255, 0.2);
     border-radius: 2px;
-    overflow: visible; /* Allow knob to overflow */
+    overflow: visible; /* CRITICAL: Allow touch-target overlay to overflow */
     z-index: 10;
   }
 
+  /* Increase Touch Target for iPhone without affecting visuals */
+  .mp-progress-container::before {
+    content: "";
+    position: absolute;
+    top: -20px; /* Extend touch area up */
+    bottom: -20px; /* Extend touch area down */
+    left: -10px;
+    right: -10px;
+    background: transparent;
+    z-index: 20; /* Ensure it catches taps */
+  }
+
   .mp-progress-container:hover {
-    height: 6px;
+    height: 4px; /* Maintain fixed height on mobile */
   }
 
   .mp-progress-bar {
