@@ -3,15 +3,15 @@ const cors = require('cors');
 const songRoutes = require('./routes/songRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
 const testRoutes = require('./routes/testRoutes');
+const likeRoutes = require('./routes/likeRoutes');
 
 const app = express();
 
 app.use(cors({ 
     origin: [
         'http://localhost:5173', 
-        'https://sangatamizh-music-premium.vercel.app',
-        process.env.FRONTEND_URL // Allow dynamic frontend URL from Env Vars
-    ].filter(Boolean), // Filter out undefined if env var is not set
+        'https://sangatamizh-music-premium.vercel.app'
+    ],
     credentials: true
 }));
 app.use(express.json());
@@ -20,6 +20,7 @@ app.use(express.json());
 app.use('/api', songRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/test', testRoutes);
+app.use('/api/likes', likeRoutes);
 
 // Health Check
 app.get('/', (req, res) => res.send('Sangatamizh Music Backend v2'));

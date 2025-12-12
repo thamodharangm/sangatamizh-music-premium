@@ -15,6 +15,7 @@ model User {
   role      Role     @default(USER)
   createdAt DateTime @default(now())
   PlayHistory PlayHistory[]
+  likes     Like[]
 }
 
 enum Role {
@@ -42,6 +43,7 @@ model Song {
   youtube_views BigInt? @default(0)
   
   PlayHistory PlayHistory[]
+  likes       Like[]
 
   @@map("songs")
 }
@@ -62,4 +64,15 @@ model LoginLog {
   userId    String?
   email     String?
   createdAt DateTime @default(now())
+}
+
+model Like {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  songId    String
+  song      Song     @relation(fields: [songId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, songId])
 }
