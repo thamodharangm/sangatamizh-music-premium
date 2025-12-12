@@ -447,6 +447,7 @@
     padding: 1rem !important;
   }
 
+  /* Stack Header vertically */
   .playlist-header {
     flex-direction: column !important;
     align-items: center !important;
@@ -465,117 +466,104 @@
     margin-bottom: 0.5rem !important;
   }
 
-  /* Transform Table Wrappers to Block */
+  /* Transform Table to Cards/List */
   .playlist-container table,
-  .playlist-container tbody {
+  .playlist-container thead,
+  .playlist-container tbody,
+  .playlist-container th,
+  .playlist-container td,
+  .playlist-container tr {
     display: block !important;
-    width: 100% !important;
   }
-  
+
+  /* Hide Table Header */
   .playlist-container thead {
-    display: none !important; 
+    display: none !important;
   }
 
-  /* HORIZONTAL LIST STYLE ROW FOR MOBILE */
-  /* Using tr.playlist-row to override generic tr styles if any */
-  tr.playlist-row {
-    display: flex !important; 
-    flex-direction: row !important; 
-    align-items: center !important;
-    justify-content: space-between !important;
-    
-    background: transparent !important; 
-    border: none !important;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important; 
-    border-radius: 0 !important;
-    
-    padding: 0.8rem 0 !important; 
-    margin: 0 !important;
-    gap: 12px !important;
-    width: 100% !important;
-  }
-
-  /* Force cells to be block-level flex items to behave consistently */
-  tr.playlist-row td {
-    display: block !important;
-    border: none !important;
+  /* CARD STYLE ROW FOR MOBILE */
+  .playlist-row {
+    display: flex !important; /* Re-enable flex for formatting */
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    background: var(--bg-card) !important;
+    margin-bottom: 1rem !important;
+    border-radius: 12px !important;
+    border: 1px solid var(--border-color) !important;
+    padding: 1rem !important;
+    gap: 1rem !important;
+    position: relative;
   }
 
   /* Hide Index Column */
-  tr.playlist-row td:first-child {
+  .playlist-row td:first-child {
     display: none !important; 
   }
 
   /* 2. Song Info (Image + Title + Artist) */
-  tr.playlist-row td:nth-child(2) {
-    flex: 1 !important;
+  .playlist-row td:nth-child(2) {
+    width: 100%;
     padding: 0 !important;
-    min-width: 0; 
+    border: none !important;
   }
 
-  /* Inner Content */
-  tr.playlist-row td:nth-child(2) > div {
+  /* Inner Div of Song Info - Adjust Flex */
+  .playlist-row td:nth-child(2) > div {
     display: flex !important;
     flex-direction: row !important;
     align-items: center !important;
-    gap: 12px !important;
+    gap: 1rem !important;
   }
 
-  tr.playlist-row img {
-    width: 48px !important;
-    height: 48px !important;
+  /* Image Styling */
+  .playlist-row img {
+    width: 64px !important;
+    height: 64px !important;
     border-radius: 8px !important;
-    object-fit: cover !important;
     flex-shrink: 0;
   }
 
-  /* Text Stack */
-  tr.playlist-row td:nth-child(2) > div > div {
+  /* Text Wrapper Styling */
+  .playlist-row td:nth-child(2) > div > div {
     display: flex !important;
     flex-direction: column !important;
     align-items: flex-start !important;
-    gap: 2px !important;
-    min-width: 0;
+    gap: 4px !important;
   }
 
-  tr.playlist-row td:nth-child(2) span:first-child {
-    font-size: 0.95rem !important;
+  /* Title Styling */
+  .playlist-row td:nth-child(2) span:first-child {
+    font-size: 1rem !important;
     font-weight: 700 !important;
     color: white !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    max-width: 200px;
   }
 
-  tr.playlist-row td:nth-child(2) span:last-child {
-    font-size: 0.8rem !important;
+  /* Artist Styling */
+  .playlist-row td:nth-child(2) span:last-child {
+    font-size: 0.9rem !important;
     color: var(--text-muted) !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    max-width: 200px;
   }
 
-  /* 3. Play Button */
-  tr.playlist-row td:last-child {
-    width: auto !important;
+  /* 3. Play Button - FULL WIDTH BOTTOM */
+  .playlist-row td:last-child {
+    width: 100%;
+    text-align: center !important;
     padding: 0 !important;
+    margin-top: 0.5rem; /* Space from content */
   }
 
-  tr.playlist-row td:last-child button {
-    width: 40px !important;
-    height: 40px !important;
-    border-radius: 50% !important;
-    background: var(--bg-card) !important; /* Button background */
-    border: 1px solid var(--border-color) !important;
-    color: var(--primary) !important;
-    padding: 0 !important;
-    display: flex;
+  .playlist-row td:last-child button {
+    width: 100% !important;
+    background: var(--primary) !important;
+    color: white !important;
+    font-weight: 800 !important;
+    text-transform: uppercase;
+    height: 44px !important;
+    box-shadow: 0 4px 0 var(--primary-depth) !important; /* Keep 3D style */
+    border-radius: 12px !important;
+    display: flex; /* Ensure centering */
     align-items: center;
     justify-content: center;
-    box-shadow: none !important;
-    margin: 0 !important;
   }
 }
 
