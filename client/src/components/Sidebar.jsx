@@ -24,6 +24,9 @@ const Sidebar = () => {
         <Link to="/library" className={`nav-item ${isActive('/library')}`}>
           <span>📚</span> <span className="nav-text">Library</span>
         </Link>
+        <Link to="/playlist" className={`nav-item ${isActive('/playlist')}`}>
+          <span>🎵</span> <span className="nav-text">My Playlist</span>
+        </Link>
         
         {user && user.role === 'admin' && (
           <Link to="/admin" className={`nav-item ${isActive('/admin')}`}>
