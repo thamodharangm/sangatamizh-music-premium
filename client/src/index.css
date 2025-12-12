@@ -368,7 +368,7 @@ h2 { font-size: 2rem; }
   
   /* Bigger Icons for Mobile Touch Targets */
   .nav-item span:first-child {
-    font-size: 1.5rem;
+    font-size: 2rem; /* Increased from 1.5rem for better visibility */
   }
 
   /* Show logout/login icons if needed */
