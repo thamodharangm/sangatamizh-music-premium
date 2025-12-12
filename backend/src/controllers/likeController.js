@@ -14,29 +14,42 @@ exports.toggleLike = async (req, res) => {
             return res.status(400).json({ error: "Missing userId or songId" });
         }
 
-        // Check if Liked
-        const existingLike = await prisma.like.findUnique({
-            where: {
-                userId_songId: { userId, songId }
-            }
+        // Check if song exists
+        const song = await prisma.song.findUnique({
+            where: { id: songId }
         });
 
-        if (existingLike) {
-            // Unlike
-            await prisma.like.delete({
-                where: { id: existingLike.id }
-            });
+        if (!song) {
+            return res.status(404).json({ error: "Song not found" });
+        }
+
+        // Check if already liked
+        const existingLike = await prisma.$queryRawUnsafe(
+            `SELECT * FROM "Like" WHERE "userId" = $1 AND "songId" = $2 LIMIT 1`,
+            userId,
+            songId
+        );
+
+        if (existingLike && existingLike.length > 0) {
+            // Unlike - delete the like
+            await prisma.$executeRawUnsafe(
+                `DELETE FROM "Like" WHERE "userId" = $1 AND "songId" = $2`,
+                userId,
+                songId
+            );
             return res.json({ status: 'unliked' });
         } else {
-            // Like
-            await prisma.like.create({
-                data: { userId, songId }
-            });
+            // Like - insert new like
+            await prisma.$executeRawUnsafe(
+                `INSERT INTO "Like" ("id", "userId", "songId", "createdAt") VALUES (gen_random_uuid(), $1, $2, NOW())`,
+                userId,
+                songId
+            );
             return res.json({ status: 'liked' });
         }
 
     } catch (e) {
-        console.error("Link Toggle Error:", e);
+        console.error("Like Toggle Error:", e);
         res.status(500).json({ error: e.message });
     }
 };
@@ -47,10 +60,10 @@ exports.getLikedIds = async (req, res) => {
         const { userId } = req.query;
         if (!userId) return res.status(400).json({ error: "Missing userId" });
 
-        const likes = await prisma.like.findMany({
-            where: { userId },
-            select: { songId: true }
-        });
+        const likes = await prisma.$queryRawUnsafe(
+            `SELECT "songId" FROM "Like" WHERE "userId" = $1`,
+            userId
+        );
 
         const ids = likes.map(l => l.songId);
         res.json(ids);
@@ -67,13 +80,11 @@ exports.getLikedSongs = async (req, res) => {
         const { userId } = req.query;
         if (!userId) return res.status(400).json({ error: "Missing userId" });
 
-        const likes = await prisma.like.findMany({
-            where: { userId },
-            include: { song: true },
-            orderBy: { createdAt: 'desc' }
-        });
+        const songs = await prisma.$queryRawUnsafe(
+            `SELECT s.* FROM songs s INNER JOIN "Like" l ON s.id = l."songId" WHERE l."userId" = $1 ORDER BY l."createdAt" DESC`,
+            userId
+        );
 
-        const songs = likes.map(l => l.song);
         res.json(serialize(songs));
 
     } catch (e) {

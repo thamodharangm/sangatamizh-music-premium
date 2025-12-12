@@ -7,13 +7,22 @@ const SongCard = ({ song, onPlay }) => {
   const [isLiked, setIsLiked] = useState(false);
   const { user } = useAuth();
 
-  // On mount, if 'song' has a 'liked' property from backend, use it.
-  // Otherwise, we might need to fetch status? 
-  // For scalability, let's assume the parent list might pass initial 'isLiked' status if it fetched it.
-  // But since we are incrementally upgrading, let's keep it simple: 
-  // We won't fetch individual status per card to avoid N+1 requests.
-  // We rely on the User doing the action or Parent Component passing 'likedIds'.
-  // For now, let's just make the Action work.
+  // Fetch initial liked status when component mounts
+  useEffect(() => {
+    const checkLikedStatus = async () => {
+      if (!user?.uid) return;
+      
+      try {
+        const response = await api.get(`/likes/ids?userId=${user.uid}`);
+        const likedIds = response.data;
+        setIsLiked(likedIds.includes(song.id));
+      } catch (error) {
+        console.error('Error checking liked status:', error);
+      }
+    };
+
+    checkLikedStatus();
+  }, [user, song.id]);
   
   const handleLike = async (e) => {
     e.stopPropagation();
@@ -49,7 +58,10 @@ const SongCard = ({ song, onPlay }) => {
             userId: user.uid, // Firebase UID 
             songId: song.id 
         });
-        // Success
+        
+        // Dispatch custom event to notify other components (like Playlist page)
+        window.dispatchEvent(new CustomEvent('playlistUpdated'));
+        
     } catch (err) {
         console.error("Like Toggle Failed", err);
         // Revert UI on failure

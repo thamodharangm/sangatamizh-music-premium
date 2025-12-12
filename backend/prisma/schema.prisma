@@ -15,7 +15,6 @@ model User {
   role      Role     @default(USER)
   createdAt DateTime @default(now())
   PlayHistory PlayHistory[]
-  likes     Like[]
 }
 
 enum Role {
@@ -68,8 +67,7 @@ model LoginLog {
 
 model Like {
   id        String   @id @default(uuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
+  userId    String   // Firebase UID - no FK constraint
   songId    String
   song      Song     @relation(fields: [songId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
