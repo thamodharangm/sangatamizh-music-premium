@@ -72,8 +72,8 @@
 
 .logout-btn {
   width: 100%;
-  height: 40px;
-  font-size: 0.8rem;
+  height: var(--btn-height); /* Match standard button height (48px) */
+  font-size: 1rem; /* Match standard button font */
 }
 
 .login-btn {
@@ -447,7 +447,6 @@
     padding: 1rem !important;
   }
 
-  /* Stack Header vertically */
   .playlist-header {
     flex-direction: column !important;
     align-items: center !important;
@@ -466,159 +465,117 @@
     margin-bottom: 0.5rem !important;
   }
 
-  /* Transform Table to Cards/List */
+  /* Transform Table Wrappers to Block */
   .playlist-container table,
-  .playlist-container thead,
-  .playlist-container tbody,
-  .playlist-container th,
-  .playlist-container td,
-  .playlist-container tr {
+  .playlist-container tbody {
     display: block !important;
+    width: 100% !important;
   }
-
-  /* Hide Table Header */
+  
   .playlist-container thead {
-    display: none !important;
+    display: none !important; 
   }
 
-  .playlist-row {
+  /* HORIZONTAL LIST STYLE ROW FOR MOBILE */
+  /* Using tr.playlist-row to override generic tr styles if any */
+  tr.playlist-row {
+    display: flex !important; 
+    flex-direction: row !important; 
+    align-items: center !important;
+    justify-content: space-between !important;
+    
+    background: transparent !important; 
+    border: none !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important; 
+    border-radius: 0 !important;
+    
+    padding: 0.8rem 0 !important; 
+    margin: 0 !important;
+    gap: 12px !important;
+    width: 100% !important;
+  }
+
+  /* Force cells to be block-level flex items to behave consistently */
+  tr.playlist-row td {
+    display: block !important;
+    border: none !important;
+  }
+
+  /* Hide Index Column */
+  tr.playlist-row td:first-child {
+    display: none !important; 
+  }
+
+  /* 2. Song Info (Image + Title + Artist) */
+  tr.playlist-row td:nth-child(2) {
+    flex: 1 !important;
+    padding: 0 !important;
+    min-width: 0; 
+  }
+
+  /* Inner Content */
+  tr.playlist-row td:nth-child(2) > div {
     display: flex !important;
     flex-direction: row !important;
     align-items: center !important;
-    justify-content: space-between !important;
-    padding: 1rem !important;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
-    gap: 12px;
+    gap: 12px !important;
   }
 
-  /* Row Item: Index Number - Hide it or make small */
-  .playlist-row td:first-child {
-    display: none !important; /* Hide Index # to save space */
-  }
-
-  /* Row Item: Title & Image */
-  .playlist-row td:nth-child(2) {
-    padding: 0 !important;
-    flex: 1; /* Take up remaining space */
-  }
-
-  .playlist-row td:nth-child(2) > div {
-    display: flex;
-    flex-direction: column !important; /* Stack image and text? No, Image left, Text right */
-    align-items: flex-start !important;
-    gap: 4px !important;
-    position: relative;
-    padding-left: 60px !important; /* Space for absolute positioned image */
-    min-height: 50px;
-    justify-content: center;
-  }
-
-  .playlist-row img {
-    position: absolute;
-    left: 0;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 50px !important;
-    height: 50px !important;
+  tr.playlist-row img {
+    width: 48px !important;
+    height: 48px !important;
     border-radius: 8px !important;
+    object-fit: cover !important;
+    flex-shrink: 0;
   }
 
-  .playlist-row span {
-    /* Title */
-    font-size: 0.95rem !important;
-    font-weight: 700 !important;
-    line-height: 1.2;
-    display: block;
-    margin-bottom: 2px;
-  }
-
-  /* We previously hid the 3rd child (Artist). Let's unhide it and position it strictly or merge it visually */
-  /* Actually, simply unhiding it as a block element below the title might work inside the flex container?
-     No, they are separate TD elements. Converting TD to block means they stack VERTICALLY.
-     Row = Flex Row.
-     TD 1 (Index) = Hidden.
-     TD 2 (Title+Img) = Flex 1.
-     TD 3 (Artist) = ...
-     TD 4 (Action) = Right.
-
-     To stack Artist UNDER Title, we'd need them in the same container.
-     Since we can't change HTML structure easily for just mobile without JS...
-     
-     Option B: Make the Row wrap? 
-     Title (100%), Artist (100%), Button (100%).
-     
-     User Screenshot shows:
-     [Image] [Title]
-             [Artist - potentially inside title or separate line]
-     [      PLAY BUTTON      ]
-     
-     Ah, the user screenshot shows the PLAY BUTTON is a big block at the bottom of the card!
-     And the text is stacked.
-  */
-
-  /* CARD STYLE ROW FOR MOBILE */
-  .playlist-row {
+  /* Text Stack */
+  tr.playlist-row td:nth-child(2) > div > div {
+    display: flex !important;
     flex-direction: column !important;
     align-items: flex-start !important;
-    background: var(--bg-card) !important;
-    margin-bottom: 1rem !important;
-    border-radius: 12px !important;
-    border: 1px solid var(--border-color) !important;
-    padding: 1rem !important;
-    gap: 1rem !important;
+    gap: 2px !important;
+    min-width: 0;
   }
 
-  /* 1. Title/Image Section */
-  .playlist-row td:nth-child(2) {
-    width: 100%;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05); /* Separator */
-    padding-bottom: 1rem !important;
-    margin-bottom: 0.5rem;
+  tr.playlist-row td:nth-child(2) span:first-child {
+    font-size: 0.95rem !important;
+    font-weight: 700 !important;
+    color: white !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    max-width: 200px;
   }
 
-  .playlist-row td:nth-child(2) > div {
-    /* The flex container in JS */
-    flex-direction: row !important; /* Keep image left of title */
-    padding-left: 0 !important;
-    align-items: center !important;
-    justify-content: flex-start;
+  tr.playlist-row td:nth-child(2) span:last-child {
+    font-size: 0.8rem !important;
+    color: var(--text-muted) !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    max-width: 200px;
   }
 
-  .playlist-row img {
-    position: static !important; /* Reset absolute */
-    transform: none !important;
-    width: 60px !important;
-    height: 60px !important;
-    margin-right: 12px;
-  }
-
-  /* 2. Artist Section - SHOW IT NOW */
-  .playlist-row td:nth-child(3) {
-    display: block !important;
-    width: 100%;
-    color: var(--text-muted);
-    font-size: 0.9rem;
-    margin-top: -12px; /* Pull closer to title section? Or just let it sit */
-    padding: 0 0 1rem 0 !important; /* Spacing */
-    padding-left: 72px !important; /* Align with text (60px img + 12px gap) */
-  }
-
-  /* 3. Play Button - FULL WIDTH BOTTOM */
-  .playlist-row td:last-child {
-    width: 100%;
-    text-align: center !important;
+  /* 3. Play Button */
+  tr.playlist-row td:last-child {
+    width: auto !important;
     padding: 0 !important;
   }
 
-  .playlist-row td:last-child button {
-    width: 100% !important;
-    background: var(--primary) !important;
-    color: white !important;
-    font-weight: 800 !important;
-    text-transform: uppercase;
-    height: 44px !important;
+  tr.playlist-row td:last-child button {
+    width: 40px !important;
+    height: 40px !important;
+    border-radius: 50% !important;
+    background: var(--bg-card) !important; /* Button background */
+    border: 1px solid var(--border-color) !important;
+    color: var(--primary) !important;
+    padding: 0 !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     box-shadow: none !important;
-    border-radius: 8px !important;
+    margin: 0 !important;
   }
 }
 

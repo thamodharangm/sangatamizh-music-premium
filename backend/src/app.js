@@ -9,8 +9,9 @@ const app = express();
 app.use(cors({ 
     origin: [
         'http://localhost:5173', 
-        'https://sangatamizh-music-premium.vercel.app'
-    ],
+        'https://sangatamizh-music-premium.vercel.app',
+        process.env.FRONTEND_URL // Allow dynamic frontend URL from Env Vars
+    ].filter(Boolean), // Filter out undefined if env var is not set
     credentials: true
 }));
 app.use(express.json());

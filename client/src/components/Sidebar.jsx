@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 
 const Sidebar = () => {
   const { pathname } = useLocation();
-  const { user, logout, stats } = useAuth(); // Get stats
+  const { user, logout } = useAuth();
 
   const isActive = (path) => pathname === path ? 'active' : '';
 
@@ -53,11 +53,7 @@ const Sidebar = () => {
       <div className="sidebar-footer">
         {user ? (
           <div className="user-info">
-             {/* Gamification Stats */}
-             <div className="user-stats">
-                <span className="stat-item gems" title="Daily Gems">💎 {stats?.gems || 0}</span>
-                <span className="stat-item streak" title="Streak">🔥 {stats?.streak || 0}</span>
-             </div>
+
              <p className="user-login-msg">
                Logged in as <br/> <strong>{user.email.split('@')[0]}</strong>
              </p>

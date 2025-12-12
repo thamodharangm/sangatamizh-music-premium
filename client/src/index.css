@@ -162,56 +162,56 @@ h2 { font-size: 2rem; }
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 0 16px; /* Horizontal padding, height handled by height prop */
-  height: 48px;     /* Fixed height for button look */
-  margin: 8px 0;    /* More space between buttons */
-  border-radius: var(--radius-md);
+  padding: 0 24px; /* Matches 'Start Listening' padding */
+  height: var(--btn-height); /* Matches 'Start Listening' height (48px) */
+  margin-bottom: 12px; 
+  border-radius: var(--radius-lg); /* Matches 'Start Listening' radius */
   
-  /* Default State (Inactive) - Like "My Library" button */
-  background-color: transparent;
+  /* Default State (Inactive) - Like "My Library" button (btn-secondary) */
+  background-color: var(--bg-card); /* Filled background */
   border: 2px solid var(--border-color);
-  border-bottom: 4px solid var(--border-color); /* 3D Edge */
+  box-shadow: 0px 4px 0px var(--border-color); /* 3D Edge via shadow */
   color: var(--text-muted);
   
   font-weight: 700;
-  font-size: 0.95rem;
+  font-size: 1rem; /* Matches 'Start Listening' font */
   text-transform: uppercase;
   letter-spacing: 0.8px;
   text-decoration: none;
-  transition: all 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.1s, box-shadow 0.1s, background-color 0.2s;
+  user-select: none;
 }
 
 .nav-item:hover {
-  background-color: var(--bg-card);
+  background-color: #283840; /* Slightly lighter card bg */
+  border-color: #4b5d67;
   transform: translateY(-2px); /* Slight lift */
+  box-shadow: 0px 6px 0px var(--border-color); /* Increased shadow on lift */
   color: white;
 }
 
 .nav-item:active {
-  border-bottom-width: 2px; /* Press down effect */
-  transform: translateY(2px);
+  transform: translateY(4px);
+  box-shadow: 0px 0px 0px var(--border-color); /* Pressed down */
 }
 
-/* Active State - Like "Start Listening" Green Button */
+/* Active State - Like "Start Listening" Green Button (btn-primary) */
 .nav-item.active {
   background-color: var(--primary);
-  border-color: var(--primary-depth); /* Darker green border */
-  border-bottom: 4px solid var(--primary-depth); /* Darker green 3D edge */
+  border-color: var(--primary-depth); 
+  box-shadow: 0px 4px 0px var(--primary-depth); /* Green 3D edge */
   color: white;
-  box-shadow: 0 4px 12px rgba(88, 204, 2, 0.3); /* Green Glow */
 }
 
 .nav-item.active:hover {
-  background-color: #5ce602; /* Slightly brighter green */
-  transform: none; /* Active button stays put usually, or subtle lift */
+  filter: brightness(1.1);
+  transform: translateY(-2px);
+  box-shadow: 0px 6px 0px var(--primary-depth);
 }
 
 .nav-item.active:active {
-  transform: translateY(2px);
-  border-bottom-width: 0px; /* Fully pressed */
-  margin-bottom: 10px; /* Compensate for lost border height to keep layout stable-ish, or just limit effect */
-  /* Simpler active press: */
-  box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+  transform: translateY(4px);
+  box-shadow: 0px 0px 0px var(--primary-depth);
 }
 
 /* --- SIDEBAR & NAVIGATION STRUCTURE --- */
@@ -230,6 +230,8 @@ h2 { font-size: 2rem; }
   flex-direction: column;
   flex-shrink: 0;
   z-index: 100;
+  height: 100vh;
+  overflow: hidden; /* Static container, no outer scrollbar */
 }
 
 .sidebar-header {
@@ -238,6 +240,7 @@ h2 { font-size: 2rem; }
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-shrink: 0; /* Never shrink header */
 }
 
 .brand-title {
@@ -251,17 +254,46 @@ h2 { font-size: 2rem; }
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  flex: 1;
+  flex: 1; /* Takes available space */
+  overflow-y: auto; /* Scrollable middle section */
+  scrollbar-width: none; /* Hide scrollbar Firefox */
+  -ms-overflow-style: none; /* Hide scrollbar IE/Edge */
+  min-height: 0; /* Crucial for nested flex scrolling */
+}
+
+/* Hide scrollbar for Chrome/Safari on Nav */
+.sidebar-nav::-webkit-scrollbar { 
+  display: none; 
 }
 
 .sidebar-footer {
   margin-top: auto;
   padding-top: 1rem;
-  padding-bottom: 2rem; /* Added breathing room for Logout button */
+  padding-bottom: 2rem; 
   border-top: 2px solid var(--border-color);
+  flex-shrink: 0; /* Never shrink footer */
 }
 
 /* User Stats in Sidebar */
+.user-info {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.logout-btn {
+  width: 100%;
+  margin-top: 0.5rem;
+  /* Specific override if needed for red focus */
+  color: #ef4444 !important; /* Tailwind Red-500 equivalent for Logout */
+  border-color: #7f1d1d !important;
+  box-shadow: 0px 4px 0px #7f1d1d !important;
+}
+.logout-btn:active {
+  box-shadow: none !important;
+}
+
 .user-stats {
   display: flex;
   justify-content: space-around;
@@ -271,6 +303,7 @@ h2 { font-size: 2rem; }
   border-radius: var(--radius-md);
   font-weight: 700;
   font-size: 0.9rem;
+  width: 100%; /* Ensure stats span full width too */
 }
 .stat-item { display: flex; align-items: center; gap: 6px; }
 
