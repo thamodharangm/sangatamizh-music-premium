@@ -109,30 +109,49 @@ function Home() {
   const { playSong } = useMusic();
   const navigate = useNavigate();
 
+  // State for all songs (keep if needed for other filters) or just sections
+  const [sections, setSections] = useState({ trending: [], hits: [], recent: [] });
+  // Keep regular songs state if needed for "All", but sections are prioritize
+  
   useEffect(() => {
-    const fetchSongs = async () => {
+    const fetchSections = async () => {
       try {
-        const res = await api.get('/songs');
-        const songsList = res.data.map(song => ({
-          ...song,
-          audioUrl: song.file_url,
-          coverUrl: song.cover_url || song.coverUrl
+        const user = JSON.parse(localStorage.getItem('user'));
+        const [songsRes, sectionRes] = await Promise.all([
+             api.get('/songs'),
+             api.get(`/home-sections?userId=${user?.id || ''}`)
+        ]);
+
+        const normalize = (list) => list.map(s => ({
+            ...s,
+            audioUrl: s.file_url || s.fileUrl,
+            coverUrl: s.cover_url || s.coverUrl
         }));
-        setSongs(songsList);
+
+        setSongs(normalize(songsRes.data));
+        setSections({
+            trending: normalize(sectionRes.data.trending),
+            hits: normalize(sectionRes.data.hits),
+            recent: normalize(sectionRes.data.recent)
+        });
+        
       } catch (error) {
-        console.error("Error fetching songs: ", error);
+        console.error("Error fetching home data: ", error);
       } finally {
         setLoading(false);
       }
     };
-    fetchSongs();
+    fetchSections();
   }, []);
 
-  // Define Sections Data
-  const trendingSongs = songs.slice(0, 10); // First 10
-  const recentSongs = [...songs].reverse().slice(0, 10); // Last 10 reversed
-  const tamilSongs = songs.filter(s => (s.category || '').toLowerCase().includes('tamil'));
-  const malayalamSongs = songs.filter(s => (s.category || '').toLowerCase().includes('malayalam'));
+  const handlePlay = async (song, playlist) => {
+       playSong(song, playlist);
+       // Log play in background
+       const user = JSON.parse(localStorage.getItem('user'));
+       if (user?.id) {
+           api.post('/log-play', { userId: user.id, songId: song.id }).catch(e => console.error("Log fail", e));
+       }
+  };
 
   return (
     <div className="home-container">
@@ -155,7 +174,7 @@ function Home() {
               Your daily streak of soulful music starts here.
             </p>
             <div style={{ display: 'flex', gap: '1rem' }}>
-              <button onClick={() => document.getElementById('scroll-trending')?.scrollIntoView({ behavior: 'smooth' })} className="btn-3d btn-primary">Start Listening</button>
+              <button onClick={() => document.getElementById('scroll-hits')?.scrollIntoView({ behavior: 'smooth' })} className="btn-3d btn-primary">Start Listening</button>
               <button onClick={() => navigate('/library')} className="btn-3d btn-secondary">My Library</button>
             </div>
           </div>
@@ -173,22 +192,27 @@ function Home() {
              <div style={{ padding: '4rem', textAlign: 'center', color: 'var(--text-muted)' }}>Loading your music...</div>
         ) : (
           <>
-            <SongSection title="Trending Now" songs={trendingSongs} playSong={playSong} id="trending" />
-            <SongSection title="Recently Played" songs={recentSongs} playSong={playSong} id="recent" />
-            
-            {/* Conditional Sections - only show if there are songs */}
-            {tamilSongs.length > 0 && (
-               <SongSection title="Tamil Hits" songs={tamilSongs} playSong={playSong} id="tamil" />
-            )}
-            {malayalamSongs.length > 0 && (
-               <SongSection title="Malayalam Vibes" songs={malayalamSongs} playSong={playSong} id="malayalam" />
-            )}
 
-            {songs.length === 0 && (
-               <div className="card-flat" style={{ textAlign: 'center', padding: '3rem' }}>
-                  <p style={{ color: 'var(--text-muted)' }}>No songs available. Upload some music in the Admin Panel!</p>
-               </div>
-            )}
+             {/* 1. Recently Played (User History) */}
+             {sections.recent.length > 0 && (
+                <SongSection title="Recently Played" songs={sections.recent} playSong={handlePlay} id="recent" />
+             )}
+            
+             {/* 2. Tamil Hits */}
+             {sections.hits.length > 0 && (
+                <SongSection title="Tamil Hits" songs={sections.hits} playSong={handlePlay} id="hits" />
+             )}
+
+             {/* Fallback to local if empty, or show other categories from main list if desired */}
+             {songs.length > 0 && sections.hits.length === 0 && (
+                 <SongSection title="All Songs" songs={songs.slice(0, 10)} playSong={handlePlay} id="all" />
+             )}
+
+             {songs.length === 0 && (
+                <div className="card-flat" style={{ textAlign: 'center', padding: '3rem' }}>
+                   <p style={{ color: 'var(--text-muted)' }}>No songs available. Upload some music in the Admin Panel!</p>
+                </div>
+             )}
           </>
         )}
 

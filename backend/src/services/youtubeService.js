@@ -14,6 +14,7 @@ const util = require('util');
 const exec = util.promisify(require('child_process').exec);
 const { YT_API_KEY, YOUTUBE_COOKIES } = require('../config/env');
 const { runYtDlp } = require('../utils/runYtDlp');
+const lyricsFinder = require('lyrics-finder'); // New import
 
 let ytDlpBinaryPath = process.platform === 'win32' 
     ? path.join(__dirname, '../../yt-dlp.exe') 
@@ -63,7 +64,117 @@ const getCookiePath = () => {
     return cookiePath;
 };
 
+const cleanMetadata = (title, channelName) => {
+    // Remove common video prefixes/suffixes
+    let cleanTitle = title
+        .replace(/^(Full Video|Video Song|Lyrical Video|Official Video|Lyrical|4K|HD)[:\|]?\s*/i, '') // Prefixes
+        .replace(/\(.*\)/g, '')
+        .replace(/\[.*\]/g, '')
+        .replace(/ft\..*/i, '')
+        .replace(/feat\..*/i, '')
+        .replace(/\|.*/, '') // Remove everything after pipe
+        .replace(/ - .*/, '') // Remove everything after dash if use dash separator
+        .replace(/Video Song|Full Video|Lyrical/gi, '') // Remove these words anywhere
+        .trim();
+        
+    // Sometimes artist is in title "Artist - Song" - handled by piped/dash removal above mostly, 
+    // but if it was "Song - Artist", it's harder. Assuming standard format.
+    
+    // For specific known channels or patterns
+    let artist = channelName;
+    if (channelName.includes('VEVO') || channelName.includes('Sony') || channelName.includes('Music')) {
+         // Try to find artist in description or just use generic search which lyrics-finder handles well if artist is vague
+         artist = ""; // Let lyrics finder guess from title only if channel is generic label
+    }
+
+    return { title: cleanTitle, artist };
+};
+
+const detectEmotion = (title, description = '', lyrics = '') => {
+    const text = (title + ' ' + description + ' ' + lyrics).toLowerCase();
+    
+    // Weights: Lyrics matches count x2, Title x3
+    // Simple occurrence check:
+    
+    const countMatches = (keywords) => {
+        let count = 0;
+        const potentialMatches = [];
+        keywords.forEach(k => {
+            const regex = new RegExp(`\\b${k}\\b`, 'gi');
+            const matches = text.match(regex);
+            if (matches) {
+                count += matches.length;
+                potentialMatches.push(`${k}(${matches.length})`);
+            }
+        });
+        return { count, matches: potentialMatches };
+    };
+
+    // 1. Sad / Emotional
+    const sadKeywords = [
+        'sad', 'lonely', 'cry', 'broken', 'pain', 'tears', 'miss you', 'heartbreak',
+        'sogam', 'kanner', 'pirivu', 'valigal', 'thanimai', 'emotional', 'pathos',
+        'death', 'die', 'hurt', 'alone', 'sorry', 'goodbye', 'lost', 'sogamaana'
+    ];
+    const sadRes = countMatches(sadKeywords);
+    const sadScore = sadRes.count;
+    
+    // 2. Motivation / Power
+    const motivationKeywords = [
+        'motivation', 'gym', 'workout', 'power', 'rise', 'inspire', 'success', 'win', 
+        'victory', 'triumph', 'energy', 'beast', 'fire', 'thunder', 'verithanam', 'mass',
+        'strong', 'fight', 'champion', 'believe', 'dream', 'gethu', 'singapenney'
+    ];
+    const motivationRes = countMatches(motivationKeywords);
+    const motivationScore = motivationRes.count;
+    
+    // 3. Vibe / Party / Fast
+    const vibeKeywords = [
+        'party', 'dj', 'dance', 'remix', 'vibe', 'kuthu', 'fast', 'beat', 'club', 
+        'folk', 'gaana', 'celebration', 'fun', 'groove', 'thara local', 'adi', 'koko',
+        'start music', 'drink', 'night', 'shake', 'move', 'aatam', 'thullal'
+    ];
+    const vibeRes = countMatches(vibeKeywords);
+    const vibeScore = vibeRes.count;
+    
+    // 4. Feel Good / Melody / Love
+    const feelGoodKeywords = [
+        'feel good', 'happy', 'chill', 'relax', 'melody', 'love', 'romance', 
+        'kaadhal', 'kadhal', 'pizhai', 'mudhal', 'anbe', 'uyire', 'kanmani', 
+        'azhagi', 'beautiful', 'soul', 'breeze', 'rain', 'mazhai', 'bgm', 'instrumental',
+        'senthaazhini', 'poo', 'malar', 'kannamma', 'thoongu', 'madiyil', 'urgame',
+        'baby', 'kiss', 'together', 'forever', 'sun', 'smile', 
+        'kannumuzhi', 'kannu', 'vizhi', 'penne', 'usure', 'rathamae', 'yennai', 'lesa'
+    ];
+    const feelGoodRes = countMatches(feelGoodKeywords);
+    const feelGoodScore = feelGoodRes.count;
+
+    console.log(`[Emotion Analysis] Matches: Sad-[${sadRes.matches}], Motivation-[${motivationRes.matches}], Vibe-[${vibeRes.matches}], FeelGood-[${feelGoodRes.matches}]`);
+    console.log(`[Emotion Analysis] Scores - Sad: ${sadScore}, Motivation: ${motivationScore}, Vibe: ${vibeScore}, Feel Good: ${feelGoodScore}`);
+
+    // Determine winner
+    const maxScore = Math.max(sadScore, motivationScore, vibeScore, feelGoodScore);
+    
+    if (maxScore === 0) return 'Feel Good'; 
+    
+    // Priority Resolution for Ties or "Mass" conflict
+    // If Motivation has "Mass" only, but Feel Good has strong romantic keywords, prefer Feel Good.
+    const hasMass = motivationRes.matches.some(m => m.startsWith('mass'));
+    if (hasMass && feelGoodScore > 0 && feelGoodScore >= motivationScore - 1) {
+         return 'Feel Good';
+    }
+
+    if (motivationScore === maxScore) return 'Motivation';
+    if (vibeScore === maxScore) return 'Vibe';
+    if (sadScore === maxScore) return 'Sad songs';
+    if (feelGoodScore === maxScore) return 'Feel Good';
+
+    return 'Feel Good'; 
+};
+
 async function getMetadata(url) {
+    const fs = require('fs');
+    fs.appendFileSync('debug_meta.log', `[${new Date().toISOString()}] Request: ${url}\n`);
     console.log('[Meta Request] URL:', url);
     const cookiePath = getCookiePath();
     
@@ -78,10 +189,25 @@ async function getMetadata(url) {
                 if (d.items && d.items.length > 0) {
                     const snip = d.items[0].snippet;
                     console.log('[Meta] ✅ API Success');
+                    
+                    // Fetch Lyrics
+                    const { title: cleanTitle, artist } = cleanMetadata(snip.title, snip.channelTitle);
+                    let lyrics = "";
+                    try {
+                        lyrics = await lyricsFinder(artist, cleanTitle) || "";
+                        console.log(`[Meta] Lyrics found: ${lyrics.length} chars`);
+                    } catch(e) { console.log('[Meta] Lyrics fetch failed', e.message); }
+
+                    const emotion = detectEmotion(snip.title, snip.description, lyrics);
+                    
+                    fs.appendFileSync('debug_meta.log', `[API] Title: ${snip.title}, Emotion: ${emotion}\n`);
+                    console.log(`[Meta] Detected Emotion for "${snip.title}": ${emotion}`);
                     return { 
                         title: snip.title, 
                         artist: snip.channelTitle, 
-                        coverUrl: snip.thumbnails.high?.url || snip.thumbnails.default?.url 
+                        coverUrl: snip.thumbnails.high?.url || snip.thumbnails.default?.url,
+                        emotion,
+                        description: snip.description
                     };
                 }
              } catch(e) { console.error('[Meta] API Error', e.message); }
@@ -94,11 +220,28 @@ async function getMetadata(url) {
         const cmd = `${ytDlpBinaryPath} "${url}" --dump-json --no-warnings --prefer-free-formats --force-ipv4 --cookies "${cookiePath}"`;
         const { stdout } = await exec(cmd);
         const info = JSON.parse(stdout);
+        
+        // Fetch Lyrics
+        const { title: cleanTitle, artist } = cleanMetadata(info.title, info.uploader);
+        let lyrics = "";
+        try {
+            lyrics = await lyricsFinder(artist, cleanTitle) || "";
+             console.log(`[Meta] Lyrics found: ${lyrics.length} chars`);
+        } catch(e) { console.log('[Meta] Lyrics fetch failed', e.message); }
+
+        const emotion = detectEmotion(info.title, info.description || '', lyrics);
+        const views = info.view_count || 0;
+        
+        console.log(`[Meta][yt-dlp] Detected Emotion: ${emotion}, Views: ${views}`);
         return { 
             title: info.title, 
             artist: info.uploader || 'Unknown', 
-            coverUrl: info.thumbnail 
+            coverUrl: info.thumbnail,
+            emotion,
+            description: info.description,
+            viewCount: views
         };
+
     } catch(e) { console.log('[Meta] yt-dlp failed:', e.message); }
 
     // 3. Fallback to ytdl-core
@@ -108,7 +251,8 @@ async function getMetadata(url) {
          return {
              title: info.videoDetails.title,
              artist: info.videoDetails.author.name,
-             coverUrl: info.videoDetails.thumbnails[0].url
+             coverUrl: info.videoDetails.thumbnails[0].url,
+             emotion: detectEmotion(info.videoDetails.title, info.videoDetails.description || '')
          };
     } catch(e) {}
 

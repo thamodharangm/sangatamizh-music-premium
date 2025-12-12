@@ -17,4 +17,8 @@ router.post('/upload-from-yt', songController.uploadFromYoutube);
 const cpUpload = upload.fields([{ name: 'audio', maxCount: 1 }, { name: 'cover', maxCount: 1 }]);
 router.post('/upload-file', cpUpload, songController.uploadFile);
 
+// Home Page Sections
+router.get('/home-sections', songController.getHomeSections);
+router.post('/log-play', songController.logPlay);
+
 module.exports = router;

@@ -14,7 +14,7 @@ const AdminUpload = () => {
   // Form State
   const [file, setFile] = useState(null);
   const [cover, setCover] = useState(null);
-  const [metadata, setMetadata] = useState({ title: '', artist: '', album: '', category: 'General', coverUrl: '' });
+  const [metadata, setMetadata] = useState({ title: '', artist: '', album: '', category: 'General', emotion: 'Neutral', coverUrl: '' });
   
   const [loading, setLoading] = useState(false);
   const [dataLoading, setDataLoading] = useState(true);
@@ -48,8 +48,8 @@ const AdminUpload = () => {
     setLoading(true);
     try {
       const res = await api.post('/yt-metadata', { url: youtubeUrl });
-      const { title, artist, coverUrl } = res.data;
-      setMetadata(prev => ({ ...prev, title, artist, coverUrl }));
+      const { title, artist, coverUrl, emotion } = res.data;
+      setMetadata(prev => ({ ...prev, title, artist, coverUrl, emotion: emotion || 'Neutral' }));
       setMessage('Metadata fetched!');
     } catch (err) {
       console.error(err);
@@ -83,6 +83,7 @@ const AdminUpload = () => {
          await api.post('/upload-from-yt', {
            url: youtubeUrl,
            category: metadata.category,
+           emotion: metadata.emotion,
            customMetadata: metadata
          });
          setMessage('YouTube Import Successful!');
@@ -100,6 +101,7 @@ const AdminUpload = () => {
         formData.append('artist', metadata.artist || 'Unknown Artist');
         formData.append('album', metadata.album || 'Single');
         formData.append('category', metadata.category || 'General');
+        formData.append('emotion', metadata.emotion || 'Neutral');
 
         await api.post('/upload-file', formData, {
           headers: { 'Content-Type': 'multipart/form-data' }
@@ -112,7 +114,7 @@ const AdminUpload = () => {
         if(document.getElementById('cover-input')) document.getElementById('cover-input').value = "";
       }
       
-      setMetadata({ title: '', artist: '', album: '', category: 'General', coverUrl: '' });
+      setMetadata({ title: '', artist: '', album: '', category: 'General', emotion: 'Neutral', coverUrl: '' });
       fetchSongs(); // Refresh stats
 
     } catch (err) {
@@ -286,6 +288,14 @@ const AdminUpload = () => {
                  <input className="input-flat" type="text" name="title" placeholder="Song Title" value={metadata.title} onChange={handleMetadataChange} />
                  <input className="input-flat" type="text" name="artist" placeholder="Artist Name" value={metadata.artist} onChange={handleMetadataChange} />
                  <input className="input-flat" type="text" name="album" placeholder="Album Name" value={metadata.album} onChange={handleMetadataChange} />
+                 <select className="input-flat" name="emotion" value={metadata.emotion} onChange={handleMetadataChange} style={{ cursor: 'pointer' }}>
+                   <option value="Neutral">Neutral</option>
+                   <option value="Sad">Sad</option>
+                   <option value="Feel Good">Feel Good</option>
+                   <option value="Motivation">Motivation</option>
+                   <option value="Love">Love</option>
+                   <option value="Party">Party</option>
+                 </select>
                  {/* Category hidden */}
                </div>
             )}
@@ -293,6 +303,7 @@ const AdminUpload = () => {
             {uploadTab === 'youtube' && (
                <div style={{ marginBottom: '1.5rem' }}>
                    {/* Category hidden */}
+                   {/* Emotion auto-detected, no UI shown */}
                </div>
             )}
 

@@ -41,7 +41,7 @@ const Library = () => {
     // Let's assume song.category might store these values, or we filter loosely for demo
     const matchesCategory = selectedCategory === 'All' 
         ? true 
-        : (song.category || '').toLowerCase() === selectedCategory.toLowerCase();
+        : (song.emotion || '').toLowerCase() === selectedCategory.toLowerCase();
 
     return matchesSearch && matchesCategory;
   });

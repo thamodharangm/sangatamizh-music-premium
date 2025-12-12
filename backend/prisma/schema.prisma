@@ -14,6 +14,7 @@ model User {
   password  String
   role      Role     @default(USER)
   createdAt DateTime @default(now())
+  PlayHistory PlayHistory[]
 }
 
 enum Role {
@@ -32,12 +33,28 @@ model Song {
   title      String
   artist     String
   category   String   @default("General")
+  emotion    String   @default("Neutral")
   cover_url  String
   file_url   String
   source_url String?
   created_at DateTime @default(now())
 
+  youtube_views BigInt? @default(0)
+  
+  PlayHistory PlayHistory[]
+
   @@map("songs")
+}
+
+model PlayHistory {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  songId    String
+  song      Song     @relation(fields: [songId], references: [id], onDelete: Cascade)
+  playedAt  DateTime @default(now())
+
+  @@index([userId])
 }
 
 model LoginLog {

@@ -8,12 +8,18 @@ const { YT_API_KEY, YOUTUBE_COOKIES } = require('../config/env');
 // Helper to extract ID (simplified version of what's in service)
 const extractVideoId = (url) => url.match(/(?:v=|youtu\.be\/|embed\/)([\w-]{11})/)?.[1];
 
+const serialize = (data) => JSON.parse(JSON.stringify(data, (key, value) =>
+    typeof value === 'bigint'
+        ? value.toString()
+        : value 
+));
+
 exports.getAllSongs = async (req, res) => {
     try {
         const songs = await prisma.song.findMany({
             orderBy: { created_at: "desc" },
         });
-        res.json(songs);
+        res.json(serialize(songs));
     } catch (e) {
         res.status(500).json({ error: e.message });
     }
@@ -33,9 +39,11 @@ exports.getMetadata = async (req, res) => {
 };
 
 exports.uploadFromYoutube = async (req, res) => {
-    const { url, category, customMetadata } = req.body;
+    const { url, category, emotion, customMetadata } = req.body;
     let tempFile = null;
-
+    const fs = require('fs');
+    fs.appendFileSync('debug_upload.log', `[${new Date().toISOString()}] Body: ${JSON.stringify(req.body)}\n`);
+    console.log("[UploadFromYouTube] Body:", req.body);
     try {
         // 1. Get Metadata to get ID and basic info
         const metadata = await youtubeService.getMetadata(url);
@@ -61,10 +69,12 @@ exports.uploadFromYoutube = async (req, res) => {
                 file_url: publicUrl,
                 cover_url: customMetadata?.coverUrl || metadata.coverUrl || "https://via.placeholder.com/150",
                 category: category || "Tamil",
+                category: category || "Tamil",
+                emotion: emotion || metadata.emotion || "Neutral",
+                youtube_views: BigInt(metadata.viewCount || 0)
             },
         });
-        
-        res.json(song);
+        res.json(serialize(song));
 
     } catch (e) {
         console.error("Youtube Upload Logic Failed:", e);
@@ -99,6 +109,7 @@ exports.uploadFile = async (req, res) => {
         title = title || audioFile.originalname.replace(/\.[^/.]+$/, "") || "Untitled Song";
         artist = artist || "Unknown Artist";
         category = category || "General";
+        const emotion = req.body.emotion || "Neutral";
         
         let finalCoverUrl = coverUrl || "https://via.placeholder.com/150";
 
@@ -124,14 +135,20 @@ exports.uploadFile = async (req, res) => {
 
         const song = await prisma.song.create({
             data: {
-                category: category || "General"
+                title,
+                artist,
+                file_url: audioUrl,
+                cover_url: finalCoverUrl,
+                category, // already handled defaults
+                emotion
             }
         });
 
         // Cleanup audio temp file
         if (fs.existsSync(audioFile.path)) fs.unlinkSync(audioFile.path);
+
         
-        res.json(song);
+        res.json(serialize(song));
 
     } catch(e) {
         console.error(e);
@@ -161,4 +178,134 @@ exports.debugNetwork = async (req, res) => {
         google_status: google,
         env_cookies: !!YOUTUBE_COOKIES,
     });
+};
+
+exports.logPlay = async (req, res) => {
+    try {
+        const { userId, songId } = req.body;
+        
+        if (!userId || !songId) {
+             return res.status(400).json({ error: "userId and songId required" });
+        }
+
+        // Ensure User exists in Postgres (Syncing Firebase ID)
+        // We use upsert to be safe, or just check and create.
+        // Since we don't have email in this request, we fake it or use ID.
+        let user = await prisma.user.findUnique({ where: { id: userId } });
+        if (!user) {
+             // Create ghost user for history tracking
+             console.log(`[LogPlay] Creating placeholder user for ID: ${userId}`);
+             try {
+                user = await prisma.user.create({
+                    data: {
+                        id: userId, // Use the Firebase UID
+                        email: `${userId}@firebase.placeholder`,
+                        password: 'firebase-user', // Dummy
+                        role: 'USER'
+                    }
+                });
+             } catch (createError) {
+                 // Race condition check
+                 if (createError.code === 'P2002') {
+                     user = await prisma.user.findUnique({ where: { id: userId } });
+                 } else {
+                     throw createError;
+                 }
+             }
+        }
+
+        await prisma.playHistory.create({
+             data: { userId, songId }
+        });
+
+        res.status(200).json({ status: 'ok' });
+    } catch(e) {
+        console.error("Play Log Error", e);
+        res.status(500).json({ error: "Failed to log", message: e.message, stack: e.stack });
+    }
+};
+
+exports.getHomeSections = async (req, res) => {
+    try {
+        const userId = req.query.userId;
+        
+        // 1. Trending Now: Sort by youtube_views desc (Top 10)
+        // Note: Using BigInt, which JSON.stringify fails on unless serialized.
+        const trending = await prisma.song.findMany({
+            orderBy: { youtube_views: 'desc' },
+            take: 10
+        });
+
+        // 2. Tamil Hits: Sort by youtube_views desc where category='Tamil'
+        const hits = await prisma.song.findMany({
+            where: { 
+                OR: [
+                    { category: 'Tamil' },
+                    { emotion: 'Feel Good' }, // Including popular Feel Good ones in hits too potentially
+                 ]
+            },
+            orderBy: { youtube_views: 'desc' },
+            take: 10
+        });
+
+        // 3. Recently Played: "User Mostly and Recently Played"
+        // We want a mix of frequency and recency.
+        let recent = [];
+        if (userId) {
+            // Fetch raw history
+            const history = await prisma.playHistory.findMany({
+                where: { userId },
+                include: { song: true },
+                orderBy: { playedAt: 'desc' },
+                take: 100 // Look at last 100 plays
+            });
+
+            // Process in JS to rank by Frequency + Recency
+            const stats = {};
+            history.forEach(h => {
+                if (!stats[h.songId]) {
+                    stats[h.songId] = { 
+                        song: h.song, 
+                        count: 0, 
+                        lastPlayed: new Date(h.playedAt).getTime() 
+                    };
+                }
+                stats[h.songId].count++;
+                // Update lastPlayed if this entry is newer (though we sorted desc, so first is newest)
+                if (new Date(h.playedAt).getTime() > stats[h.songId].lastPlayed) {
+                     stats[h.songId].lastPlayed = new Date(h.playedAt).getTime();
+                }
+            });
+
+            // Scored sorting
+            // We want songs played OFTEN and RECENTLY. 
+            // Simple Score: Count + (is_very_recent ? 2 : 0)
+            // Or just sort by Count DESC, then LastPlayed DESC
+            const sorted = Object.values(stats).sort((a, b) => {
+                // Primary: Frequency (Most Played)
+                if (b.count !== a.count) return b.count - a.count;
+                // Secondary: Recency
+                return b.lastPlayed - a.lastPlayed;
+            });
+
+            recent = sorted.map(s => s.song).slice(0, 10);
+        }
+
+        // Helper to serialize BigInt
+        const serialize = (data) => JSON.parse(JSON.stringify(data, (key, value) =>
+            typeof value === 'bigint'
+                ? value.toString()
+                : value // return everything else unchanged
+        ));
+
+        res.json({
+            trending: serialize(trending),
+            hits: serialize(hits),
+            recent: serialize(recent)
+        });
+
+    } catch (e) {
+         console.error(e);
+         res.status(500).json({ error: e.message });
+    }
 };
