@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useRef, useEffect } from 'react';
 import { useAuth } from './AuthContext';
+import api from '../config/api';
 
 const MusicContext = createContext();
 
@@ -17,6 +18,49 @@ export const MusicProvider = ({ children }) => {
   const [duration, setDuration] = useState(0);
 
   const audioRef = useRef(new Audio());
+
+  // Helper to ensure nextSong works inside event listener
+  // We need to use a Ref to access the latest queue/index inside the event listener without re-attaching listeners constantly
+  const queueRef = useRef([]);
+  const indexRef = useRef(-1);
+
+  useEffect(() => {
+    queueRef.current = queue;
+    indexRef.current = currentIndex;
+  }, [queue, currentIndex]);
+
+  // Internal helper to play specific index without recreating queue
+  const playAtIndex = (index, song) => {
+    setCurrentIndex(index);
+    setCurrentSong(song);
+  };
+
+  const nextSong = () => {
+    const q = queueRef.current;
+    const idx = indexRef.current;
+    if (q.length === 0) return;
+
+    if (idx < q.length - 1) {
+      const newIndex = idx + 1;
+      const song = q[newIndex];
+      playAtIndex(newIndex, song);
+    } else {
+      // End of playlist - Stop or Loop? Let's stops for now.
+      setIsPlaying(false);
+    }
+  };
+
+  const prevSong = () => {
+    const index = indexRef.current;
+    if (index > 0) {
+      const newIndex = index - 1;
+      const song = queueRef.current[newIndex];
+      playAtIndex(newIndex, song);
+    } else {
+      // Restart song
+      audioRef.current.currentTime = 0;
+    }
+  };
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -56,48 +100,7 @@ export const MusicProvider = ({ children }) => {
   // FIX: Provide dependencies to useEffect? No, easier to just access state via refs or helper functions that are stable...
   // ACTUALLY: Let's make nextSong NOT depend on the closure by updating the Queue management slightly.
 
-  // Helper to ensure nextSong works inside event listener
-  // We need to use a Ref to access the latest queue/index inside the event listener without re-attaching listeners constantly
-  const queueRef = useRef([]);
-  const indexRef = useRef(-1);
 
-  useEffect(() => {
-    queueRef.current = queue;
-    indexRef.current = currentIndex;
-  }, [queue, currentIndex]);
-
-  const nextSong = () => {
-    const q = queueRef.current;
-    const idx = indexRef.current;
-    if (q.length === 0) return;
-
-    if (idx < q.length - 1) {
-      const newIndex = idx + 1;
-      const song = q[newIndex];
-      playAtIndex(newIndex, song);
-    } else {
-      // End of playlist - Stop or Loop? Let's stops for now.
-      setIsPlaying(false);
-    }
-  };
-
-  const prevSong = () => {
-    const index = indexRef.current;
-    if (index > 0) {
-      const newIndex = index - 1;
-      const song = queueRef.current[newIndex];
-      playAtIndex(newIndex, song);
-    } else {
-      // Restart song
-      audioRef.current.currentTime = 0;
-    }
-  };
-
-  // Internal helper to play specific index without recreating queue
-  const playAtIndex = (index, song) => {
-    setCurrentIndex(index);
-    setCurrentSong(song);
-  };
 
   // Re-attach 'ended' listener correctly? 
   // Actually, we can just call nextSong() inside the effect and nextSong uses the Refs.
@@ -158,6 +161,12 @@ export const MusicProvider = ({ children }) => {
 
     setQueue(newQueue);
     playAtIndex(newIndex, song);
+
+    // --- Log History to Database ---
+    if (user && user.uid && song && song.id) {
+       api.post('/log-play', { userId: user.uid, songId: song.id })
+          .catch(err => console.error("History Log Failed", err));
+    }
   };
 
   return (
