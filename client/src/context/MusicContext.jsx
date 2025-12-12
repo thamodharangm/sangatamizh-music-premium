@@ -33,6 +33,24 @@ export const MusicProvider = ({ children }) => {
   const playAtIndex = (index, song) => {
     setCurrentIndex(index);
     setCurrentSong(song);
+    
+    // CRITICAL iOS FIX: Play synchronously to satisfy browser autoplay policies
+    if (song && song.audioUrl) {
+        const audio = audioRef.current;
+        // Only update source if different to avoid reloading if same song clicked (unless we want restart?)
+        // Let's allow restart if same song clicked? Usually yes.
+        // Actually, if simply navigating, we might want to check.
+        // But for explicit "Play" click, we usually want to ensure it plays.
+        
+        if (audio.src !== song.audioUrl) {
+            audio.src = song.audioUrl;
+            // Reset time?
+            // audio.currentTime = 0; // Browsers do this on new src
+        }
+        
+        // Force play immediately within the click event loop
+        audio.play().catch(e => console.warn("Immediate play failed:", e));
+    }
   };
 
   const nextSong = () => {
@@ -64,38 +82,25 @@ export const MusicProvider = ({ children }) => {
 
   useEffect(() => {
     const audio = audioRef.current;
-    audio.preload = 'auto'; // Optimize buffering
 
     const handlePlay = () => setIsPlaying(true);
     const handlePause = () => setIsPlaying(false);
     
     // Auto-play next song
     const handleEnded = () => {
-      // Don't force pause state here, let the transition handle it
-      // setIsPlaying(false); 
+      setIsPlaying(false);
       if (updateStats) updateStats('song_played');
       nextSong();
     };
 
     const handleTimeUpdate = () => setCurrentTime(audio.currentTime);
-    const handleDurationChange = () => {
-        if(audio.duration && Number.isFinite(audio.duration)) {
-            setDuration(audio.duration);
-        }
-    };
-    // Initial metadata load
-    const handleLoadedMetadata = () => {
-         if(audio.duration && Number.isFinite(audio.duration)) {
-             setDuration(audio.duration);
-         }
-    };
+    const handleLoadedMetadata = () => setDuration(audio.duration);
 
     audio.addEventListener('play', handlePlay);
     audio.addEventListener('pause', handlePause);
     audio.addEventListener('ended', handleEnded);
     audio.addEventListener('timeupdate', handleTimeUpdate);
     audio.addEventListener('loadedmetadata', handleLoadedMetadata);
-    audio.addEventListener('durationchange', handleDurationChange);
 
     return () => {
       audio.removeEventListener('play', handlePlay);
@@ -103,7 +108,6 @@ export const MusicProvider = ({ children }) => {
       audio.removeEventListener('ended', handleEnded);
       audio.removeEventListener('timeupdate', handleTimeUpdate);
       audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
-      audio.removeEventListener('durationchange', handleDurationChange);
     };
   }, [queue, currentIndex]); // Re-bind if playlist changes to ensure fresh state access? Actually handleEnded relies on closing over 'queue' if defined inside. 
   // BETTER: Move nextSong logic into handleEnded or use functional state updates.
@@ -115,21 +119,25 @@ export const MusicProvider = ({ children }) => {
   // ACTUALLY: Let's make nextSong NOT depend on the closure by updating the Queue management slightly.
 
 
-
-  // Re-attach 'ended' listener correctly? 
-  // Actually, we can just call nextSong() inside the effect and nextSong uses the Refs.
-  
-  // Watch currentSong changes to play audio
+  // Watch currentSong changes - Fallback for non-click updates (e.g. Next Song via auto-end)
   useEffect(() => {
     const audio = audioRef.current;
     if (currentSong) {
-      // Only change src if it's different to support resuming or seeking without reload? 
-      // Actually for a new song object, it's always new.
+      // If audio source is already set correctly (by synchronous click handler), don't interrupt.
+      if (audio.src === currentSong.audioUrl) {
+         if (audio.paused) {
+             // Try to play if paused (e.g. if previous play() failed or was blocked)
+             audio.play().catch(e => console.error("Effect play error:", e));
+         }
+         return; 
+      }
+
+      // If source mismatch (e.g. automated next song), set it.
+      // This path typically works fine for "Next Song" because it's triggered by 'ended' event or programmatically, 
+      // where browser policy is sometimes lenient if chain is trusted, OR audio context is already active.
       if (audio.src !== currentSong.audioUrl) {
          audio.src = currentSong.audioUrl;
-         audio.play().catch(e => console.error("Play error:", e));
-      } else {
-         if (audio.paused) audio.play().catch(console.error);
+         audio.play().catch(e => console.error("Effect play error:", e));
       }
     }
   }, [currentSong]);
