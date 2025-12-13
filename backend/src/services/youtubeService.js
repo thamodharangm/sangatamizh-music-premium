@@ -264,7 +264,8 @@ async function downloadAudio(videoId) {
     console.log(`Downloading ${videoId}...`);
     const tempFile = path.join(os.tmpdir(), `song_${Date.now()}.mp3`);
     
-    // 1. Try @distube/ytdl-core (Node Native - Often fastest)
+    // 1. Try @distube/ytdl-core (DISABLED - Suspected cause of double-stream bug)
+    /* 
     try {
         console.log('[Download] Trying @distube/ytdl-core...');
         const ytdl = require('@distube/ytdl-core');
@@ -291,7 +292,8 @@ async function downloadAudio(videoId) {
     } catch (e) {
         console.log('[Download] ytdl-core failed:', e.message);
         if (fs.existsSync(tempFile)) fs.unlinkSync(tempFile);
-    }
+    } 
+    */
 
     // 2. Try Invidious Mirrors
     const mirrors = ["https://inv.tux.pizza", "https://vid.uff.io", "https://invidious.jing.rocks"];
