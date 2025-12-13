@@ -1,103 +1,171 @@
 import { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import api from '../api/axios';
-import SongCard from '../components/SongCard'; // Import unified card
-import { useMusic } from '../context/MusicContext'; // Import playback hook
+import SongCard from '../components/SongCard';
+import { useMusic } from '../context/MusicContext';
 
 const Library = () => {
   const [songs, setSongs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { playSong } = useMusic(); // Access global player
+  const { playSong } = useMusic();
+  const location = useLocation();
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [selectedEmotion, setSelectedEmotion] = useState('All');
   
-  const categories = ['All', 'Sad songs', 'Feel Good', 'Vibe', 'Motivation'];
+  const emotions = ['All', 'Sad songs', 'Feel Good', 'Vibe', 'Motivation'];
+
+  const fetchSongs = async () => {
+    try {
+      setLoading(true);
+      const res = await api.get('/songs'); 
+      const normalized = res.data.map(s => ({
+          ...s,
+          coverUrl: s.cover_url || s.coverArt,
+          audioUrl: s.file_url || s.filePathHigh,
+          emotion: s.emotion || 'Feel Good'
+      }));
+      setSongs(normalized);
+      console.log('✅ Library: Fetched', normalized.length, 'songs with emotions');
+    } catch (error) {
+      console.error('Failed to fetch songs', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    // ... (fetch logic remains same)
-    const fetchSongs = async () => {
-      try {
-        const res = await api.get('/songs'); 
-        const normalized = res.data.map(s => ({
-            ...s,
-            coverUrl: s.cover_url || s.coverArt,
-            audioUrl: s.file_url || s.filePathHigh
-        }));
-        setSongs(normalized);
-      } catch (error) {
-        console.error('Failed to fetch songs', error);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchSongs();
   }, []);
+
+  // Auto-refresh when returning from Emotion Manager
+  useEffect(() => {
+    if (location.state?.refresh) {
+      console.log('🔄 Library: Auto-refreshing after emotion changes');
+      fetchSongs();
+    }
+  }, [location]);
 
   const filteredSongs = songs.filter(song => {
     const matchesSearch = (song.title || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
                           (song.artist || '').toLowerCase().includes(searchTerm.toLowerCase());
-    
-    // Match by emotion field - exact match with selected category
-    const matchesCategory = selectedCategory === 'All' 
-        ? true 
-        : (song.emotion || 'Feel Good') === selectedCategory;
+    const matchesEmotion = selectedEmotion === 'All' || song.emotion === selectedEmotion;
+    return matchesSearch && matchesEmotion;
+  });
 
-    return matchesSearch && matchesCategory;
+  const emotionCounts = {};
+  songs.forEach(song => {
+    const emotion = song.emotion || 'Feel Good';
+    emotionCounts[emotion] = (emotionCounts[emotion] || 0) + 1;
   });
 
   return (
-    <div style={{ padding: '0 1rem 2rem', maxWidth: '1000px', margin: '0 auto' }}>
-      <div className="library-header" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', marginBottom: '2rem', borderBottom: '2px solid var(--border-color)', paddingBottom: '1.5rem' }}>
-        <div className="library-title-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-           <h1 style={{ color: 'white', margin: 0 }}>Library</h1>
-           <input 
-             type="text" 
-             placeholder="Search songs..." 
-             value={searchTerm}
-             onChange={(e) => setSearchTerm(e.target.value)}
-             className="input-flat search-input"
-             style={{ maxWidth: '300px' }}
-           />
+    <div style={{ padding: '0 1rem 2rem', maxWidth: '1200px', margin: '0 auto' }}>
+      {/* Header */}
+      <div style={{ marginBottom: '2rem', borderBottom: '2px solid var(--border-color)', paddingBottom: '1.5rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+          <h1 style={{ color: 'white', margin: 0 }}>Library</h1>
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+            <input 
+              type="text" 
+              placeholder="Search songs..." 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="input-flat"
+              style={{ width: '200px' }}
+            />
+          </div>
         </div>
 
-        {/* Category Chips */}
-        <div className="no-scrollbar category-chips" style={{ display: 'flex', gap: '0.75rem', overflowX: 'auto', paddingBottom: '5px' }}>
-          {categories.map(cat => (
-            <button 
-              key={cat}
-              onClick={() => setSelectedCategory(cat)}
-              className={`btn-3d ${selectedCategory === cat ? 'btn-primary' : 'btn-secondary'}`}
-              style={{
-                borderRadius: '20px', // Overlay to keep them pill-shaped like hips if desired, or remove to match standard buttons. 
-                // User asked for "like start listening", which are standard buttons (radius-lg).
-                // I will NOT add inline borderRadius to strictly match "Start Listening".
-                // However, pills usually look better for categories. 
-                // "Start Listening" uses var(--radius-lg) which is 16px. 
-                // Let's stick to the class style mainly, but maybe adjust padding/font-size if needed.
-                // Actually, I'll stick to the class EXACTLY to match the request.
-                whiteSpace: 'nowrap',
-                height: '40px', // slightly smaller than main buttons (48px) for chips
-                fontSize: '0.85rem',
-                padding: '0 20px'
-              }}
-            >
-              {cat}
-            </button>
-          ))}
+        {/* Emotion Filter Chips */}
+        <div className="no-scrollbar" style={{ 
+          display: 'flex', 
+          gap: '0.75rem', 
+          overflowX: 'auto', 
+          paddingBottom: '0.5rem',
+          WebkitOverflowScrolling: 'touch'
+        }}>
+          {emotions.map(emotion => {
+            const count = emotion === 'All' ? songs.length : (emotionCounts[emotion] || 0);
+            const isActive = selectedEmotion === emotion;
+            return (
+              <button 
+                key={emotion}
+                onClick={() => setSelectedEmotion(emotion)}
+                className={`btn-3d ${isActive ? 'btn-primary' : 'btn-secondary'}`}
+                style={{ 
+                  padding: '0.5rem 1rem', 
+                  fontSize: '0.85rem', 
+                  whiteSpace: 'nowrap',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
+                }}
+              >
+                <span>{emotion}</span>
+                <span style={{ 
+                  background: isActive ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.1)',
+                  padding: '0.125rem 0.5rem',
+                  borderRadius: '10px',
+                  fontSize: '0.75rem',
+                  fontWeight: 'bold'
+                }}>
+                  {count}
+                </span>
+              </button>
+            );
+          })}
         </div>
+
+        {selectedEmotion !== 'All' && (
+          <div style={{ marginTop: '1rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+            Showing {filteredSongs.length} {selectedEmotion} {filteredSongs.length === 1 ? 'song' : 'songs'}
+          </div>
+        )}
       </div>
-      
+
+      {/* Content */}
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '4rem', color: 'var(--text-muted)' }}>Loading library...</div>
+        <div style={{ textAlign: 'center', padding: '3rem 1rem', color: 'var(--text-muted)' }}>
+          <p>Loading library...</p>
+        </div>
+      ) : songs.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '3rem 1rem', color: 'var(--text-muted)' }}>
+          <h3 style={{ color: 'white', fontSize: '1.25rem', marginBottom: '0.75rem' }}>No songs in library</h3>
+          <p>Upload some songs to get started!</p>
+        </div>
       ) : filteredSongs.length > 0 ? (
-        <div className="library-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(135px, 1fr))', gap: '1rem' }}>
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', 
+          gap: '1.5rem' 
+        }}>
           {filteredSongs.map(song => (
-            <SongCard key={song.id || song._id} song={song} onPlay={() => playSong(song, filteredSongs)} />
+            <SongCard 
+              key={song.id} 
+              song={song} 
+              onPlay={() => playSong(song, filteredSongs)} 
+            />
           ))}
         </div>
       ) : (
-        <div className="card-flat" style={{ textAlign: 'center', padding: '4rem' }}>
-          <p style={{ color: 'var(--text-muted)' }}>No songs found in your library.</p>
+        <div style={{ textAlign: 'center', padding: '3rem 1rem', color: 'var(--text-muted)' }}>
+          <h3 style={{ color: 'white', fontSize: '1.25rem', marginBottom: '0.75rem' }}>
+            No {selectedEmotion} songs found
+          </h3>
+          <p style={{ marginBottom: '1.5rem' }}>
+            {selectedEmotion === 'All' 
+              ? 'Try adjusting your search term'
+              : 'No songs in this category yet'
+            }
+          </p>
+          <button
+            className="btn-3d btn-primary"
+            onClick={() => setSelectedEmotion('All')}
+            style={{ padding: '0.75rem 1.5rem' }}
+          >
+            Show All Songs
+          </button>
         </div>
       )}
     </div>

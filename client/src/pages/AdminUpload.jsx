@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../config/api'; 
 import AdminAnalytics from './AdminAnalytics'; 
 
 const AdminUpload = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('dashboard'); // 'dashboard', 'upload', 'manage'
   const [uploadTab, setUploadTab] = useState('file'); // 'file' or 'youtube' inside Upload tab
   const [youtubeUrl, setYoutubeUrl] = useState('');
@@ -190,15 +192,21 @@ const AdminUpload = () => {
       )}
 
       {/* Main Tabs */}
-      <div className="admin-tabs" style={{ display: 'flex', gap: '1rem', marginBottom: '2rem' }}>
-        {['dashboard', 'analytics', 'upload', 'manage'].map((tab) => (
+      <div className="admin-tabs" style={{ display: 'flex', gap: '1rem', marginBottom: '2rem', flexWrap: 'wrap' }}>
+        {['dashboard', 'analytics', 'upload', 'manage', 'emotions'].map((tab) => (
           <button  
             key={tab}
-            onClick={() => setActiveTab(tab)}
+            onClick={() => {
+              if (tab === 'emotions') {
+                navigate('/admin/emotions');
+              } else {
+                setActiveTab(tab);
+              }
+            }}
             className={`btn-3d ${activeTab === tab ? 'btn-primary' : 'btn-secondary'}`}
             style={{ textTransform: 'capitalize' }}
           >
-            {tab}
+            {tab === 'emotions' ? '🎭 Emotions' : tab}
           </button>
         ))}
       </div>

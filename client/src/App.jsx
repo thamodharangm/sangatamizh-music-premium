@@ -7,8 +7,11 @@ import TestDB from './pages/TestDB';
 import Library from './pages/Library';
 import AdminUpload from './pages/AdminUpload';
 import AdminAnalytics from './pages/AdminAnalytics';
+import AdminEmotionManager from './pages/AdminEmotionManager';
+import Playlist from './pages/Playlist';
 import Sidebar from './components/Sidebar';
 import MusicPlayer from './components/MusicPlayer';
+import ScrollToTop from './components/ScrollToTop';
 import './App.css';
 
 const PrivateRoute = ({ children, adminOnly = false }) => {
@@ -20,10 +23,6 @@ const PrivateRoute = ({ children, adminOnly = false }) => {
   
   return children;
 };
-
-import Playlist from './pages/Playlist';
-
-import ScrollToTop from './components/ScrollToTop';
 
 function App() {
   return (
@@ -50,6 +49,11 @@ function App() {
                 <Route path="/admin/upload" element={
                   <PrivateRoute adminOnly={true}>
                     <AdminUpload />
+                  </PrivateRoute>
+                } />
+                <Route path="/admin/emotions" element={
+                  <PrivateRoute adminOnly={true}>
+                    <AdminEmotionManager />
                   </PrivateRoute>
                 } />
               </Routes>

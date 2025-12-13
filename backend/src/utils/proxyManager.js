@@ -40,16 +40,27 @@ async function initAutoProxyRefresh(options = {}) {
 
   console.log('[ProxyManager] Initializing auto-refresh system...');
 
-  // Immediate fetch if pool is empty or very low
+  // Immediate fetch if pool is empty or very low (NON-BLOCKING)
   if (proxyPool.length < 5) {
-    await refreshPool();
+    console.log('[ProxyManager] Proxy pool low, fetching in background...');
+    // Don't await - let it run in background
+    refreshPool().catch(err => {
+      console.warn('[ProxyManager] Background proxy fetch failed:', err.message);
+      console.log('[ProxyManager] Server will continue with direct connections');
+    });
+  } else {
+    console.log(`[ProxyManager] Using ${proxyPool.length} cached proxies`);
   }
 
   // Set up interval
   if (refreshTimer) clearInterval(refreshTimer);
   refreshTimer = setInterval(async () => {
-    await refreshPool();
+    await refreshPool().catch(err => {
+      console.warn('[ProxyManager] Scheduled refresh failed:', err.message);
+    });
   }, interval);
+  
+  console.log('[ProxyManager] Auto-refresh system initialized');
 }
 
 /**

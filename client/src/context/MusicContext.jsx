@@ -34,18 +34,21 @@ export const MusicProvider = ({ children }) => {
     setCurrentIndex(index);
     setCurrentSong(song);
     
+    // Reset time and duration immediately
+    setCurrentTime(0);
+    setDuration(0);
+    
     // CRITICAL iOS FIX: Play synchronously to satisfy browser autoplay policies
     if (song && song.audioUrl) {
         const audio = audioRef.current;
-        // Only update source if different to avoid reloading if same song clicked (unless we want restart?)
-        // Let's allow restart if same song clicked? Usually yes.
-        // Actually, if simply navigating, we might want to check.
-        // But for explicit "Play" click, we usually want to ensure it plays.
         
+        // Always update source for new song
         if (audio.src !== song.audioUrl) {
             audio.src = song.audioUrl;
-            // Reset time?
-            // audio.currentTime = 0; // Browsers do this on new src
+            audio.load(); // Force metadata reload
+        } else {
+            // Same song - restart from beginning
+            audio.currentTime = 0;
         }
         
         // Force play immediately within the click event loop
@@ -93,14 +96,47 @@ export const MusicProvider = ({ children }) => {
       nextSong();
     };
 
-    const handleTimeUpdate = () => setCurrentTime(audio.currentTime);
-    const handleLoadedMetadata = () => setDuration(audio.duration);
+    const handleTimeUpdate = () => {
+      const time = audio.currentTime;
+      // Validate time is a valid number
+      if (!isNaN(time) && isFinite(time)) {
+        setCurrentTime(time);
+      }
+    };
+
+    const handleLoadedMetadata = () => {
+      const dur = audio.duration;
+      // Validate duration is a valid number and not Infinity
+      if (!isNaN(dur) && isFinite(dur) && dur > 0) {
+        setDuration(dur);
+        console.log('✅ Duration loaded:', dur);
+      } else {
+        console.warn('⚠️ Invalid duration detected:', dur);
+      }
+    };
+
+    // Handle duration changes (more reliable than loadedmetadata)
+    const handleDurationChange = () => {
+      const dur = audio.duration;
+      if (!isNaN(dur) && isFinite(dur) && dur > 0) {
+        setDuration(dur);
+        console.log('✅ Duration updated:', dur);
+      }
+    };
+
+    // Reset time when loading new song
+    const handleLoadStart = () => {
+      setCurrentTime(0);
+      setDuration(0);
+    };
 
     audio.addEventListener('play', handlePlay);
     audio.addEventListener('pause', handlePause);
     audio.addEventListener('ended', handleEnded);
     audio.addEventListener('timeupdate', handleTimeUpdate);
     audio.addEventListener('loadedmetadata', handleLoadedMetadata);
+    audio.addEventListener('durationchange', handleDurationChange);
+    audio.addEventListener('loadstart', handleLoadStart);
 
     return () => {
       audio.removeEventListener('play', handlePlay);
@@ -108,15 +144,10 @@ export const MusicProvider = ({ children }) => {
       audio.removeEventListener('ended', handleEnded);
       audio.removeEventListener('timeupdate', handleTimeUpdate);
       audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
+      audio.removeEventListener('durationchange', handleDurationChange);
+      audio.removeEventListener('loadstart', handleLoadStart);
     };
-  }, [queue, currentIndex]); // Re-bind if playlist changes to ensure fresh state access? Actually handleEnded relies on closing over 'queue' if defined inside. 
-  // BETTER: Move nextSong logic into handleEnded or use functional state updates.
-  // Actually, let's keep it simple. Accessing 'nextSong' from closure might be stale.
-  // let's define nextSong via ref or just use state in handleEnded? 
-  // To avoid stale closures, let's rely on currentIndex state in the helper functions, 
-  // but useEffect runs only on mount. 
-  // FIX: Provide dependencies to useEffect? No, easier to just access state via refs or helper functions that are stable...
-  // ACTUALLY: Let's make nextSong NOT depend on the closure by updating the Queue management slightly.
+  }, [queue, currentIndex]);
 
 
   // Watch currentSong changes - Fallback for non-click updates (e.g. Next Song via auto-end)
@@ -133,10 +164,9 @@ export const MusicProvider = ({ children }) => {
       }
 
       // If source mismatch (e.g. automated next song), set it.
-      // This path typically works fine for "Next Song" because it's triggered by 'ended' event or programmatically, 
-      // where browser policy is sometimes lenient if chain is trusted, OR audio context is already active.
       if (audio.src !== currentSong.audioUrl) {
          audio.src = currentSong.audioUrl;
+         audio.load(); // Force reload metadata
          audio.play().catch(e => console.error("Effect play error:", e));
       }
     }

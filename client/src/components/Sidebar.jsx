@@ -30,7 +30,7 @@ const Sidebar = () => {
         
         {user && user.role === 'admin' && (
           <Link to="/admin" className={`nav-item ${isActive('/admin')}`}>
-               <span>⚡</span> <span className="nav-text">Admin</span>
+            <span>⚡</span> <span className="nav-text">Admin</span>
           </Link>
         )}
 
