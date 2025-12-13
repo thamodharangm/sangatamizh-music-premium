@@ -81,12 +81,15 @@ export const MusicProvider = ({ children }) => {
   useEffect(() => {
     const audio = audioRef.current;
 
+    let durationSet = false; // Lock to prevent double duration
+
     const handlePlay = () => setIsPlaying(true);
     const handlePause = () => setIsPlaying(false);
 
     const handleEnded = () => {
       setIsPlaying(false);
       if (updateStats) updateStats("song_played");
+      durationSet = false;
       nextSong();
     };
 
@@ -97,18 +100,25 @@ export const MusicProvider = ({ children }) => {
     };
 
     const handleLoadedMetadata = () => {
-      if (!isNaN(audio.duration)) {
-        setDuration(audio.duration);
+      const dur = audio.duration;
+      // Lock duration once set correctly
+      if (!durationSet && !isNaN(dur) && isFinite(dur) && dur > 0) {
+        setDuration(dur);
+        durationSet = true;
+        console.log("✅ Duration Locked:", dur);
       }
     };
 
     const handleDurationChange = () => {
-      if (!isNaN(audio.duration)) {
-        setDuration(audio.duration);
+      const dur = audio.duration;
+      // Only process if not locked
+      if (!durationSet && !isNaN(dur) && isFinite(dur) && dur > 0) {
+        setDuration(dur);
+        durationSet = true;
       }
     };
 
-    // 🔥 BUFFER FIX — prevents double duration
+    // 🔥 BUFFER FIX
     const handleProgress = () => {
       try {
         if (audio.buffered.length > 0) {
@@ -125,6 +135,7 @@ export const MusicProvider = ({ children }) => {
       setCurrentTime(0);
       setDuration(0);
       setBufferedTime(0);
+      durationSet = false; // Reset lock
     };
 
     audio.addEventListener("play", handlePlay);
@@ -133,7 +144,7 @@ export const MusicProvider = ({ children }) => {
     audio.addEventListener("timeupdate", handleTimeUpdate);
     audio.addEventListener("loadedmetadata", handleLoadedMetadata);
     audio.addEventListener("durationchange", handleDurationChange);
-    audio.addEventListener("progress", handleProgress); // ✅ Added
+    audio.addEventListener("progress", handleProgress);
     audio.addEventListener("loadstart", handleLoadStart);
 
     return () => {
