@@ -112,8 +112,6 @@ export const MusicProvider = ({ children }) => {
 
     const handleLoadedMetadata = () => {
       const dur = audio.duration;
-      console.log('📊 loadedmetadata - Duration:', dur, 'Already set:', durationSet);
-      
       // Only set if not already set and is valid
       if (!durationSet && !isNaN(dur) && isFinite(dur) && dur > 0) {
         setDuration(dur);
@@ -125,35 +123,35 @@ export const MusicProvider = ({ children }) => {
     // More reliable event - fires when enough data is loaded
     const handleCanPlayThrough = () => {
       const dur = audio.duration;
-      console.log('📊 canplaythrough - Duration:', dur, 'Already set:', durationSet);
-      
       // Only set if not already set and is valid
       if (!durationSet && !isNaN(dur) && isFinite(dur) && dur > 0) {
-        setDuration(dur);
-        durationSet = true;
-        console.log('✅ Duration set from canplaythrough:', dur);
+        // Double check against huge values (prevent VBR doubling error often > 10 hours)
+        if (dur < 36000) { 
+             setDuration(dur);
+             durationSet = true;
+             console.log('✅ Duration set from canplaythrough:', dur);
+        }
       }
     };
 
     // Handle duration changes (backup)
     const handleDurationChange = () => {
       const dur = audio.duration;
-      console.log('📊 durationchange - Duration:', dur, 'Already set:', durationSet);
-      
-      // Only set if not already set and is valid
-      if (!durationSet && !isNaN(dur) && isFinite(dur) && dur > 0) {
-        setDuration(dur);
-        durationSet = true;
-        console.log('✅ Duration set from durationchange:', dur);
+      // Only update if we haven't set it, OR if the new duration is significantly different (e.g. real update) 
+      // AND it's not the "double" bug (heuristic: if current is X and new is 2X, ignore)
+      if (!isNaN(dur) && isFinite(dur) && dur > 0) {
+         if (!durationSet) {
+             setDuration(dur);
+             durationSet = true;
+         }
       }
     };
 
     // Reset time when loading new song
     const handleLoadStart = () => {
-      console.log('🔄 Loading new song - resetting duration');
       setCurrentTime(0);
       setDuration(0);
-      durationSet = false; // Reset flag for new song
+      durationSet = false;
     };
 
     audio.addEventListener('play', handlePlay);
