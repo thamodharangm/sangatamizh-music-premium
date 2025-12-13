@@ -342,11 +342,10 @@ async function downloadAudio(videoId) {
     while (attempts <= maxRetries) {
         try {
             const cookiePath = getCookiePath();
-            const m4aFile = tempFile.replace('.mp3', '.m4a');
            
-            // Ensure clean start for this attempt
-            if (fs.existsSync(m4aFile)) {
-                try { fs.unlinkSync(m4aFile); } catch (e) {}
+            // Ensure clean start for this attempt (MP3 file)
+            if (fs.existsSync(tempFile)) {
+                try { fs.unlinkSync(tempFile); } catch (e) {}
             }
 
             // Proxy selection: Use env var first, but if it fails, switch to pool
@@ -370,13 +369,14 @@ async function downloadAudio(videoId) {
             // Build args array for runYtDlp
             const args = [
                 ytDlpBinaryPath,
-                '-f', 'bestaudio[ext=m4a]',
-                '-o', m4aFile,
+                '--extract-audio',
+                '--audio-format', 'mp3',
+                '--audio-quality', '0',
+                '-o', tempFile,
                 `https://www.youtube.com/watch?v=${videoId}`,
                 '--force-ipv4',
-                '--no-continue', // Do not resume partially downloaded files (prevents corruption)
-                '--no-part',     // Do not use .part files
-                // '--js-runtimes', 'node' // Removed as it might cause errors
+                '--no-continue',
+                '--no-part',
             ];
 
             // Add cookies if they exist
@@ -392,14 +392,14 @@ async function downloadAudio(videoId) {
             // Execute using wrapper
             await runYtDlp(args, { timeout: 60000 });
             
-            if (fs.existsSync(m4aFile)) {
-                 const stats = fs.statSync(m4aFile);
+            if (fs.existsSync(tempFile)) {
+                 const stats = fs.statSync(tempFile);
                  if (stats.size > 0) {
-                     console.log(`[Download] ✅ SUCCESS via yt-dlp (m4a) - Size: ${stats.size} bytes`);
-                     return m4aFile;
+                     console.log(`[Download] ✅ SUCCESS via yt-dlp (mp3) - Size: ${stats.size} bytes`);
+                     return tempFile;
                  } else {
                      console.log('[Download] yt-dlp created empty file.');
-                     fs.unlinkSync(m4aFile);
+                     fs.unlinkSync(tempFile);
                  }
             }
         } catch(e) {
