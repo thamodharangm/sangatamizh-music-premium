@@ -21,4 +21,7 @@ router.post('/upload-file', cpUpload, songController.uploadFile);
 router.get('/home-sections', songController.getHomeSections);
 router.post('/log-play', songController.logPlay);
 
+// Safar-optimized Streaming Proxy
+router.get('/stream/:id', songController.streamSong);
+
 module.exports = router;

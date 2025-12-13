@@ -166,8 +166,20 @@ export const MusicProvider = ({ children }) => {
 
     if (!currentSong) return;
 
-    if (audio.src !== currentSong.audioUrl) {
-      audio.src = currentSong.audioUrl;
+    // Safari Fix: Force usage of backend proxy to ensure correct Range/Content-Length headers
+    // This prevents the "Double Duration" bug common on iOS/Safari with direct CDN links.
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    
+    let source = currentSong.audioUrl;
+    if (isSafari) {
+        // Use proxy
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+        source = `${apiUrl}/api/stream/${currentSong.id}`;
+        console.log("🍏 Safari Detected: Switching to Proxy Stream", source);
+    }
+
+    if (audio.src !== source) {
+      audio.src = source;
       audio.load();
     }
 
